@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Clarity",
+    "slug": "clarity-focus-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "clarityfocusmobile",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#030303"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.clarity.focus",
+      "infoPlist": {
+        "NSFamilyControlsUsageDescription": "Clarity needs Screen Time access to help you stay focused by blocking distracting apps during focus sessions.",
+        "NSCameraUsageDescription": "Clarity uses the camera for friction challenges that require photo verification."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#030303"
+      },
+      "package": "com.clarity.focus",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.PACKAGE_USAGE_STATS",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.QUERY_ALL_PACKAGES"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "./plugins/withScreenTime",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Clarity uses the camera for friction challenges that require photo verification."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Clarity uses the camera for friction challenges."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
