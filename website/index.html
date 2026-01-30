@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity</title>
+    <meta name="description" content="You'll lose 11 years of your life to your screen. Take them back.">
+    <meta property="og:title" content="Clarity">
+    <meta property="og:description" content="11 years. Lost to your screen. Take them back.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Libre+Franklin:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060606;
+            --fg: #ddd8d0;
+            --fg-40: rgba(221,216,208,0.35);
+            --fg-15: rgba(221,216,208,0.12);
+            --fg-06: rgba(221,216,208,0.05);
+            --burn: #c8532a;
+            --burn-15: rgba(200,83,42,0.12);
+            --display: 'Playfair Display', Georgia, serif;
+            --body: 'Libre Franklin', -apple-system, sans-serif;
+            --smooth: cubic-bezier(0.16, 1, 0.3, 1);
+            --slow: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            scrollbar-width: none;
+            scroll-snap-type: y proximity;
+        }
+        html::-webkit-scrollbar { display: none; }
+
+        body {
+            font-family: var(--body);
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ═══════════════════════════════════════
+           SCENES
+        ═══════════════════════════════════════ */
+        .scene {
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+            scroll-snap-align: start;
+        }
+
+        /* ═══════════════════════════════════════
+           REVEAL — the core animation
+        ═══════════════════════════════════════ */
+        .fade {
+            opacity: 0;
+            transform: translateY(48px) scale(0.98);
+            filter: blur(12px);
+            transition:
+                opacity 1.4s var(--slow),
+                transform 2s var(--smooth),
+                filter 1.6s var(--slow);
+            will-change: opacity, transform, filter;
+        }
+        .fade.in {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+
+        /* stagger children */
+        .fade .delay-1 {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1.2s var(--slow) 0.4s, transform 1.6s var(--smooth) 0.4s;
+        }
+        .fade.in .delay-1 {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ═══════════════════════════════════════
+           SCENE 1 — CLARITY
+        ═══════════════════════════════════════ */
+        .scene-hero {
+            padding: 0 32px;
+        }
+
+        .hero-word {
+            font-family: var(--display);
+            font-size: clamp(5rem, 15vw, 12rem);
+            font-weight: 400;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            text-align: center;
+            opacity: 0;
+            animation: materialize 2.4s var(--smooth) 0.2s forwards;
+        }
+
+        /* ── TV static texture ── */
+        .static-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 256px 256px;
+            animation: static-shift 0.12s steps(2) infinite;
+        }
+
+        @keyframes static-shift {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-3%, -3%); }
+            100% { transform: translate(2%, 1%); }
+        }
+
+        @keyframes materialize {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.97);
+                filter: blur(16px);
+                letter-spacing: 0.02em;
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+                letter-spacing: -0.04em;
+            }
+        }
+
+        /* scroll cue — a slow breathing dot */
+        .cue {
+            position: absolute;
+            bottom: 48px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--fg-15);
+            opacity: 0;
+            animation: cue-in 0.8s ease 2.8s forwards, breathe 3s ease-in-out 3.6s infinite;
+        }
+
+        @keyframes cue-in {
+            to { opacity: 1; }
+        }
+        @keyframes breathe {
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.8); }
+        }
+
+        /* ═══════════════════════════════════════
+           SCENE 2 — THE NUMBER
+           The emotional peak. 11 fills the world.
+        ═══════════════════════════════════════ */
+        .scene-stat {
+            padding: 0 32px;
+            gap: 0;
+        }
+
+        .stat-num {
+            font-family: var(--display);
+            font-size: clamp(10rem, 40vw, 28rem);
+            font-weight: 400;
+            letter-spacing: -0.05em;
+            line-height: 0.78;
+            color: var(--burn);
+            text-align: center;
+            animation: subtle-flicker 8s ease-in-out infinite;
+        }
+
+        @keyframes subtle-flicker {
+            0%, 100% { opacity: 1; }
+            47% { opacity: 1; }
+            48% { opacity: 0.85; }
+            49% { opacity: 1; }
+            50% { opacity: 0.92; }
+            51% { opacity: 1; }
+        }
+
+        .stat-unit {
+            font-family: var(--body);
+            font-size: clamp(0.65rem, 1vw, 0.8rem);
+            font-weight: 200;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--fg-40);
+            margin-top: 28px;
+            text-align: center;
+        }
+
+        /* ═══════════════════════════════════════
+           SCENE 3 — THE WARNING
+        ═══════════════════════════════════════ */
+        .scene-phrase {
+            padding: 0 32px;
+        }
+
+        .phrase {
+            font-family: var(--display);
+            font-size: clamp(2rem, 5.5vw, 4.2rem);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.25;
+            color: var(--fg-40);
+            text-align: center;
+            max-width: 520px;
+        }
+
+        /* ═══════════════════════════════════════
+           SCENE 4 — WAITLIST
+        ═══════════════════════════════════════ */
+        .scene-join {
+            padding: 0 32px;
+            gap: 0;
+        }
+
+        .join-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 440px;
+            text-align: center;
+        }
+
+        .join-heading {
+            font-family: var(--display);
+            font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+            font-weight: 400;
+            margin-bottom: 32px;
+            letter-spacing: -0.01em;
+        }
+
+        .join-form {
+            display: flex;
+            width: 100%;
+            border: 1px solid var(--fg-06);
+            border-radius: 6px;
+            overflow: hidden;
+            transition: border-color 0.5s var(--smooth);
+        }
+        .join-form:focus-within {
+            border-color: var(--fg-15);
+            box-shadow: 0 0 30px rgba(200,83,42,0.06);
+        }
+
+        .join-input {
+            flex: 1;
+            padding: 18px 20px;
+            background: transparent;
+            border: none;
+            color: var(--fg);
+            font-family: var(--body);
+            font-size: 0.95rem;
+            font-weight: 300;
+            outline: none;
+        }
+        .join-input::placeholder {
+            color: var(--fg-15);
+            font-weight: 200;
+        }
+
+        .join-btn {
+            padding: 18px 28px;
+            background: var(--burn);
+            border: none;
+            color: #fff;
+            font-family: var(--body);
+            font-size: 0.82rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .join-btn:hover {
+            background: #b84a24;
+        }
+
+        /* success */
+        .join-ok {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .join-ok.show {
+            display: flex;
+            animation: materialize 1s var(--smooth) forwards;
+        }
+        .join-ok-line {
+            width: 24px;
+            height: 1px;
+            background: var(--burn);
+        }
+        .join-ok-msg {
+            font-family: var(--display);
+            font-size: 1.3rem;
+            font-style: italic;
+        }
+        .join-ok-sub {
+            font-size: 0.72rem;
+            font-weight: 200;
+            color: var(--fg-40);
+        }
+
+        .join-note {
+            font-size: 0.64rem;
+            font-weight: 200;
+            color: var(--fg-06);
+            margin-top: 24px;
+            letter-spacing: 0.04em;
+        }
+
+        /* ═══════════════════════════════════════
+           FOOTER
+        ═══════════════════════════════════════ */
+        footer {
+            padding: 80px 32px 44px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .f-mark {
+            font-family: var(--display);
+            font-size: 0.9rem;
+            color: var(--fg-15);
+        }
+
+        .f-nav {
+            display: flex;
+            gap: 20px;
+        }
+        .f-nav a {
+            font-family: var(--body);
+            font-size: 0.62rem;
+            font-weight: 300;
+            color: var(--fg-06);
+            text-decoration: none;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+        }
+        .f-nav a:hover { color: var(--fg-15); }
+
+        .f-legal {
+            font-size: 0.54rem;
+            font-weight: 200;
+            color: rgba(221,216,208,0.03);
+            margin-top: 4px;
+        }
+
+        /* ═══════════════════════════════════════
+           RESPONSIVE
+        ═══════════════════════════════════════ */
+        @media (max-width: 640px) {
+            .join-form {
+                flex-direction: column;
+            }
+            .join-input {
+                border-bottom: 1px solid var(--fg-06);
+            }
+            .join-btn {
+                padding: 14px;
+                text-align: center;
+            }
+            .scene {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="static-overlay"></div>
+
+    <!-- SCENE 1: The name -->
+    <section class="scene scene-hero">
+        <h1 class="hero-word">clarity</h1>
+        <div class="cue"></div>
+    </section>
+
+    <!-- SCENE 2: The cost -->
+    <section class="scene scene-stat">
+        <div class="fade">
+            <p class="stat-num">11</p>
+            <p class="stat-unit delay-1">years lost to your screen</p>
+        </div>
+    </section>
+
+    <!-- SCENE 3: The CTA -->
+    <section class="scene scene-phrase">
+        <div class="fade">
+            <p class="phrase" style="font-style:normal;color:var(--fg);font-size:clamp(2.2rem,6vw,4.5rem);">Take it back.</p>
+        </div>
+    </section>
+
+    <!-- SCENE 4: The action -->
+    <section class="scene scene-join">
+        <div class="fade">
+            <div class="join-box">
+                <p class="join-heading" style="font-style:italic;color:var(--fg-40);font-size:clamp(2rem,4vw,3rem);margin-bottom:40px;">before it's too late</p>
+
+                <form class="join-form" id="joinForm">
+                    <input type="email" class="join-input" placeholder="your@email.com" required autocomplete="email">
+                    <button type="submit" class="join-btn">Join</button>
+                </form>
+
+                <div class="join-ok" id="joinOk">
+                    <div class="join-ok-line"></div>
+                    <p class="join-ok-msg">You're in.</p>
+                    <p class="join-ok-sub">We'll reach out when it's time.</p>
+                </div>
+
+                <p class="join-note">Launching soon for iOS & Android</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p class="f-mark">clarity</p>
+        <nav class="f-nav">
+            <a href="mailto:hello@clarityfocus.app">Contact</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+        </nav>
+        <p class="f-legal">&copy; 2025 Clarity</p>
+    </footer>
+
+    <script>
+        /* ── Intersection reveal ── */
+        const fades = document.querySelectorAll('.fade');
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.intersectionRatio > 0.15) e.target.classList.add('in');
+            });
+        }, { threshold: [0, 0.15, 0.5] });
+        fades.forEach(el => io.observe(el));
+
+        /* ── Hero parallax ── */
+        const hw = document.querySelector('.hero-word');
+        const cue = document.querySelector('.cue');
+        let ticking = false;
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                ticking = true;
+                requestAnimationFrame(() => {
+                    const y = window.scrollY;
+                    const vh = window.innerHeight;
+                    if (y < vh) {
+                        const p = y / vh;
+                        hw.style.transform = `translateY(${p * 60}px) scale(${1 - p * 0.08})`;
+                        hw.style.opacity = Math.max(0, 1 - p * 1.6);
+                    }
+                    if (cue) cue.style.opacity = Math.max(0, 0.5 - (y / (vh * 0.08)));
+                    ticking = false;
+                });
+            }
+        });
+
+        /* ── Waitlist ── */
+        const form = document.getElementById('joinForm');
+        const ok = document.getElementById('joinOk');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = form.querySelector('input').value;
+            const btn = form.querySelector('.join-btn');
+            btn.textContent = '...';
+            btn.style.pointerEvents = 'none';
+            await new Promise(r => setTimeout(r, 700));
+            form.style.display = 'none';
+            ok.classList.add('show');
+            try {
+                const list = JSON.parse(localStorage.getItem('clarity_wl') || '[]');
+                list.push({ email, t: Date.now() });
+                localStorage.setItem('clarity_wl', JSON.stringify(list));
+            } catch (err) {}
+        });
+    </script>
+</body>
+</html>

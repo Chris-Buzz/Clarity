@@ -32,4 +32,11 @@ RCT_EXTERN_METHOD(updateActivitySelection:(NSDictionary *)selection
                   resolve:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(enableAlwaysOnFriction:(int)frictionLevel
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(disableAlwaysOnFriction:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 @end

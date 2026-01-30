@@ -1,8 +1,5 @@
 {
   "platforms": ["ios", "android"],
-  "ios": {
-    "modules": ["ScreenTimeModule"]
-  },
   "android": {
     "modules": ["com.clarity.screentime.ScreenTimeModule"]
   }

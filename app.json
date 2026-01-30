@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.clarity.focus",
       "infoPlist": {
         "NSFamilyControlsUsageDescription": "Clarity needs Screen Time access to help you stay focused by blocking distracting apps during focus sessions.",
-        "NSCameraUsageDescription": "Clarity uses the camera for friction challenges that require photo verification."
+        "NSCameraUsageDescription": "Clarity uses the camera for friction challenges that require photo verification.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -34,7 +35,8 @@
         "android.permission.PACKAGE_USAGE_STATS",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.QUERY_ALL_PACKAGES"
+        "android.permission.QUERY_ALL_PACKAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -63,8 +65,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
-      }
+        "projectId": "3e1b46d1-8c22-48c1-9393-4c0d3fbadd43"
+      },
+      "router": {}
     }
   }
 }

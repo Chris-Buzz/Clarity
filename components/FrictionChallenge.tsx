@@ -1,71 +1,1160 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, Image } from 'react-native';
+import { View, TextInput, Pressable, Linking, Alert, Image, ActivityIndicator, Platform } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
+  withSequence,
   ZoomIn,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { SansText, SerifText } from './Typography';
 import { Button } from './Button';
 import { colors, radius, spacing } from '@/constants';
+import { verifyChallenge, VerificationType, isAIVerificationAvailable } from '@/services/aiVerification';
+
+// Lazy load native modules that require dev build
+let Contacts: typeof import('expo-contacts') | null = null;
+let SMS: typeof import('expo-sms') | null = null;
+
+// Try to load contacts module
+try {
+  Contacts = require('expo-contacts');
+} catch (e) {
+  console.log('expo-contacts not available - contacts challenges will be skipped');
+}
+
+// Try to load SMS module
+try {
+  SMS = require('expo-sms');
+} catch (e) {
+  console.log('expo-sms not available - SMS challenges will use fallback');
+}
 
 interface FrictionChallengeProps {
-  level: number;
+  level: number; // 1 = Gentle, 2 = Moderate, 3 = Warrior
   onComplete: () => void;
   onCancel: () => void;
   themeColor: string;
 }
 
-// Generate a random math problem
-const generateMathProblem = () => {
-  const operators = ['+', '-', '*'] as const;
-  const operator = operators[Math.floor(Math.random() * 3)];
-  let a: number, b: number, answer: number;
+// Real challenge types that get people off their phones
+type ChallengeType =
+  | 'call_someone'
+  | 'text_loved_one'
+  | 'go_outside'
+  | 'drink_water'
+  | 'gratitude'
+  | 'intention'
+  | 'wait'
+  | 'walk_away'
+  | 'deep_breath'
+  | 'contact_parent'
+  | 'prove_outside'      // AI verified: prove you're outside
+  | 'prove_water'        // AI verified: show water
+  | 'prove_standing';    // AI verified: prove you're standing
 
-  switch (operator) {
-    case '+':
-      a = Math.floor(Math.random() * 50) + 10;
-      b = Math.floor(Math.random() * 50) + 10;
-      answer = a + b;
-      break;
-    case '-':
-      a = Math.floor(Math.random() * 50) + 30;
-      b = Math.floor(Math.random() * 30) + 1;
-      answer = a - b;
-      break;
-    case '*':
-      a = Math.floor(Math.random() * 12) + 2;
-      b = Math.floor(Math.random() * 12) + 2;
-      answer = a * b;
-      break;
-  }
+// Challenge configurations based on level
+const GENTLE_CHALLENGES: ChallengeType[] = ['deep_breath', 'drink_water', 'intention'];
+const MODERATE_CHALLENGES: ChallengeType[] = ['gratitude', 'text_loved_one', 'walk_away', 'wait', 'prove_water'];
+const WARRIOR_CHALLENGES: ChallengeType[] = ['call_someone', 'contact_parent', 'prove_outside', 'prove_standing'];
 
-  return { a, b, operator, answer };
+// Get random challenge based on level
+const getRandomChallenge = (level: number): ChallengeType => {
+  const challenges = level === 1
+    ? GENTLE_CHALLENGES
+    : level === 2
+      ? MODERATE_CHALLENGES
+      : WARRIOR_CHALLENGES;
+  return challenges[Math.floor(Math.random() * challenges.length)];
 };
 
-// Phrases for typing challenge
-const TYPING_PHRASES = [
-  'I choose focus over distraction',
-  'My attention is valuable',
-  'I am in control of my time',
-  'Deep work leads to deep results',
-  'Stay present, stay focused',
-];
+// ==================== CALL SOMEONE CHALLENGE ====================
+const CallSomeoneChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [selectedContact, setSelectedContact] = useState<{ name: string; phone: string } | null>(null);
+  const [callMade, setCallMade] = useState(false);
+  const [noContacts, setNoContacts] = useState(!Contacts);
 
-// Breathing animation component
-const BreathingCircle = ({ color, onComplete }: { color: string; onComplete: () => void }) => {
+  const pickContact = async () => {
+    if (!Contacts) {
+      // No contacts module - just show generic prompt
+      setNoContacts(true);
+      return;
+    }
+
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'We need access to contacts for this challenge');
+        setNoContacts(true);
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+      });
+
+      if (data.length > 0) {
+        // Pick a random contact with a phone number
+        const contactsWithPhone = data.filter(c => c.phoneNumbers && c.phoneNumbers.length > 0);
+        if (contactsWithPhone.length > 0) {
+          const randomContact = contactsWithPhone[Math.floor(Math.random() * contactsWithPhone.length)];
+          setSelectedContact({
+            name: randomContact.name || 'Unknown',
+            phone: randomContact.phoneNumbers![0].number || '',
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Contact error:', error);
+      setNoContacts(true);
+    }
+  };
+
+  const makeCall = async () => {
+    if (selectedContact) {
+      const phoneUrl = `tel:${selectedContact.phone}`;
+      const canOpen = await Linking.canOpenURL(phoneUrl);
+      if (canOpen) {
+        await Linking.openURL(phoneUrl);
+        setCallMade(true);
+        setTimeout(() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }, 1000);
+      }
+    }
+  };
+
+  useEffect(() => {
+    pickContact();
+  }, []);
+
+  if (callMade) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Real connection made
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          That's what phones are actually for.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="call-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Real Connection Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 26, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        Call someone you care about
+      </SerifText>
+      {selectedContact ? (
+        <View style={{
+          backgroundColor: colors.surface,
+          padding: spacing.lg,
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.border,
+          width: '100%',
+          marginBottom: spacing.lg,
+        }}>
+          <SansText style={{ fontSize: 12, color: colors.textMuted, marginBottom: spacing.xs }}>
+            Suggested contact:
+          </SansText>
+          <SansText style={{ fontSize: 18, color: colors.textPrimary, fontWeight: '600' }}>
+            {selectedContact.name}
+          </SansText>
+        </View>
+      ) : (
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.lg }}>
+          Loading a contact suggestion...
+        </SansText>
+      )}
+      <SansText
+        style={{
+          fontSize: 14,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          paddingHorizontal: spacing.md,
+        }}
+      >
+        Instead of mindless scrolling, have a real conversation. Even 30 seconds matters.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={makeCall} color={color} size="lg" fullWidth disabled={!selectedContact}>
+          Make the Call
+        </Button>
+        <Button onPress={pickContact} variant="secondary" size="lg" fullWidth>
+          Pick Different Contact
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== TEXT LOVED ONE CHALLENGE ====================
+const TextLovedOneChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [messageSent, setMessageSent] = useState(false);
+
+  const prompts = [
+    "Tell someone you're thinking of them",
+    "Ask a friend how they're doing",
+    "Send a thank you to someone",
+    "Check in on a family member",
+    "Share something you're grateful for with someone",
+  ];
+  const [prompt] = useState(() => prompts[Math.floor(Math.random() * prompts.length)]);
+
+  const openMessages = async () => {
+    const isAvailable = await SMS.isAvailableAsync();
+    if (isAvailable) {
+      await SMS.sendSMSAsync([], ''); // Opens empty message
+      setMessageSent(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      // Fallback - just open messages app
+      await Linking.openURL('sms:');
+      setMessageSent(true);
+    }
+  };
+
+  if (messageSent) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="heart" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Connection sent
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          You just made someone's day better.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Connection Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.lg, textAlign: 'center' }}>
+        {prompt}
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 14,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          paddingHorizontal: spacing.md,
+        }}
+      >
+        Real connection beats endless scrolling. Send a message that matters.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={openMessages} color={color} size="lg" fullWidth>
+          Open Messages
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== CONTACT PARENT CHALLENGE ====================
+const ContactParentChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [contacted, setContacted] = useState(false);
+
+  const actions = [
+    { text: "Call Mom or Dad", icon: "call-outline" as const },
+    { text: "Text your parents", icon: "chatbubble-outline" as const },
+    { text: "Send a voice note to family", icon: "mic-outline" as const },
+  ];
+  const [action] = useState(() => actions[Math.floor(Math.random() * actions.length)]);
+
+  const openPhone = async () => {
+    await Linking.openURL('tel:');
+    setContacted(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const openMessages = async () => {
+    await Linking.openURL('sms:');
+    setContacted(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  if (contacted) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="home" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Family first
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          They won't be around forever. This matters more than any feed.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name={action.icon} size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Family Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 26, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        {action.text}
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 15,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          paddingHorizontal: spacing.md,
+          lineHeight: 22,
+        }}
+      >
+        When was the last time you reached out? They'd love to hear from you.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={openPhone} color={color} size="lg" fullWidth>
+          Call
+        </Button>
+        <Button onPress={openMessages} variant="secondary" size="lg" fullWidth>
+          Text
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== GO OUTSIDE CHALLENGE ====================
+const GoOutsideChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [confirmed, setConfirmed] = useState(false);
+  const [timer, setTimer] = useState(60);
+  const [timerActive, setTimerActive] = useState(false);
+
+  useEffect(() => {
+    if (!timerActive || timer <= 0) return;
+    const interval = setInterval(() => {
+      setTimer(t => {
+        if (t <= 1) {
+          setConfirmed(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerActive, timer]);
+
+  if (confirmed) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="sunny" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Fresh air hits different
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          The real world is out there. Keep choosing it.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="leaf-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Real World Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 26, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        Step outside for 1 minute
+      </SerifText>
+      {timerActive ? (
+        <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
+          <SansText style={{ fontSize: 72, color: color, fontWeight: '200' }}>
+            {timer}
+          </SansText>
+          <SansText style={{ fontSize: 14, color: colors.textMuted }}>
+            seconds outside
+          </SansText>
+        </View>
+      ) : (
+        <SansText
+          style={{
+            fontSize: 15,
+            color: colors.textTertiary,
+            textAlign: 'center',
+            marginBottom: spacing.xl,
+            paddingHorizontal: spacing.md,
+            lineHeight: 22,
+          }}
+        >
+          Put your phone down, walk outside, and take a breath. The feed will still be there. Your life is happening now.
+        </SansText>
+      )}
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        {!timerActive ? (
+          <Button onPress={() => setTimerActive(true)} color={color} size="lg" fullWidth>
+            I'm Outside - Start Timer
+          </Button>
+        ) : null}
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== DRINK WATER CHALLENGE ====================
+const DrinkWaterChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [confirmed, setConfirmed] = useState(false);
+
+  const handleConfirm = () => {
+    setConfirmed(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  if (confirmed) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="water" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Body over screen
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          Taking care of yourself is the ultimate flex.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="water-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Self-Care Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 26, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        Drink a glass of water
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 15,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          paddingHorizontal: spacing.md,
+          lineHeight: 22,
+        }}
+      >
+        Put the phone down. Go get water. Your brain needs hydration more than dopamine hits.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={handleConfirm} color={color} size="lg" fullWidth>
+          I Drank Water
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== GRATITUDE CHALLENGE ====================
+const GratitudeChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [items, setItems] = useState(['', '', '']);
+  const filledCount = items.filter(i => i.trim().length > 0).length;
+  const isComplete = filledCount >= 3;
+
+  const handleSubmit = () => {
+    if (isComplete) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onComplete();
+    }
+  };
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="heart-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Gratitude Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        3 things you're grateful for
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 14,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        Shift your mind from what you're escaping to what you have.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm, marginBottom: spacing.lg }}>
+        {items.map((item, index) => (
+          <TextInput
+            key={index}
+            value={item}
+            onChangeText={(text) => {
+              const newItems = [...items];
+              newItems[index] = text;
+              setItems(newItems);
+            }}
+            placeholder={`${index + 1}. I'm grateful for...`}
+            placeholderTextColor={colors.textMuted}
+            style={{
+              width: '100%',
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: item.trim() ? color : colors.border,
+              borderRadius: radius.lg,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.md,
+              fontSize: 16,
+              color: colors.textPrimary,
+            }}
+          />
+        ))}
+      </View>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={handleSubmit} color={color} size="lg" fullWidth disabled={!isComplete}>
+          {isComplete ? 'Done' : `${filledCount}/3 completed`}
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== INTENTION CHALLENGE ====================
+const IntentionChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [intention, setIntention] = useState('');
+  const isComplete = intention.trim().length >= 10;
+
+  const handleSubmit = () => {
+    if (isComplete) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onComplete();
+    }
+  };
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="compass-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Intention Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        What would you rather be doing?
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 14,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        If you weren't scrolling right now, what would actually make you happy?
+      </SansText>
+      <TextInput
+        value={intention}
+        onChangeText={setIntention}
+        placeholder="I'd rather be..."
+        placeholderTextColor={colors.textMuted}
+        multiline
+        style={{
+          width: '100%',
+          minHeight: 100,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: isComplete ? color : colors.border,
+          borderRadius: radius.lg,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.md,
+          fontSize: 16,
+          color: colors.textPrimary,
+          textAlignVertical: 'top',
+          marginBottom: spacing.lg,
+        }}
+      />
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={handleSubmit} color={color} size="lg" fullWidth disabled={!isComplete}>
+          Set Intention
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== WAIT CHALLENGE ====================
+const WaitChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [timer, setTimer] = useState(30);
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    pulseScale.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 1000 }),
+        withTiming(1, { duration: 1000 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  useEffect(() => {
+    if (timer <= 0) return;
+    const interval = setInterval(() => {
+      setTimer(t => {
+        if (t <= 1) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  if (timer <= 0) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Still want to scroll?
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          Sometimes the urge passes if you just wait.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Yes, Continue
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center', marginTop: spacing.sm }}>
+          <SansText style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
+            Actually, I'll do something else
+          </SansText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <Animated.View
+        style={[
+          {
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            backgroundColor: `${color}10`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+            borderWidth: 3,
+            borderColor: `${color}40`,
+          },
+          pulseStyle,
+        ]}
+      >
+        <SansText style={{ fontSize: 48, color: color, fontWeight: '200' }}>
+          {timer}
+        </SansText>
+      </Animated.View>
+      <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        Just wait.
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 15,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          paddingHorizontal: spacing.md,
+          lineHeight: 22,
+        }}
+      >
+        Sit with the discomfort. The urge to scroll is temporary. You are stronger than the algorithm.
+      </SansText>
+      <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center', marginTop: spacing.xl }}>
+        <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+          Go back to what I was doing
+        </SansText>
+      </Pressable>
+    </View>
+  );
+};
+
+// ==================== WALK AWAY CHALLENGE ====================
+const WalkAwayChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
+  const [confirmed, setConfirmed] = useState(false);
+
+  const handleConfirm = () => {
+    setConfirmed(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  if (confirmed) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="footsteps" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Movement over stagnation
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          Your body isn't designed to sit and scroll.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${color}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="walk-outline" size={40} color={color} />
+      </View>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.sm,
+        }}
+      >
+        Movement Challenge
+      </SansText>
+      <SerifText style={{ fontSize: 26, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        Walk to another room
+      </SerifText>
+      <SansText
+        style={{
+          fontSize: 15,
+          color: colors.textTertiary,
+          textAlign: 'center',
+          marginBottom: spacing.xl,
+          paddingHorizontal: spacing.md,
+          lineHeight: 22,
+        }}
+      >
+        Put your phone down. Physically move to a different space. Break the scroll position.
+      </SansText>
+      <View style={{ width: '100%', gap: spacing.sm }}>
+        <Button onPress={handleConfirm} color={color} size="lg" fullWidth>
+          I Moved
+        </Button>
+        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
+          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
+            Go back to what I was doing
+          </SansText>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// ==================== DEEP BREATH CHALLENGE ====================
+const DeepBreathChallenge = ({
+  onComplete,
+  onCancel,
+  color,
+}: {
+  onComplete: () => void;
+  onCancel: () => void;
+  color: string;
+}) => {
   const scale = useSharedValue(0.6);
   const [phase, setPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [countdown, setCountdown] = useState(4);
   const [cycles, setCycles] = useState(0);
+  const [complete, setComplete] = useState(false);
 
   useEffect(() => {
-    const totalTime = 12000; // 4s inhale + 4s hold + 4s exhale
+    if (complete) return;
+
+    const totalTime = 12000;
     let elapsed = 0;
 
     const interval = setInterval(() => {
@@ -91,20 +1180,62 @@ const BreathingCircle = ({ color, onComplete }: { color: string; onComplete: () 
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [complete]);
 
   useEffect(() => {
     if (cycles >= 2) {
-      onComplete();
+      setComplete(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  }, [cycles, onComplete]);
+  }, [cycles]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
+  if (complete) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+        <Animated.View
+          entering={ZoomIn.duration(300).springify()}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${colors.success}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="leaf" size={40} color={colors.success} />
+        </Animated.View>
+        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
+          Centered
+        </SerifText>
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          A calm mind makes better choices.
+        </SansText>
+        <Button onPress={onComplete} color={color} size="lg" fullWidth>
+          Continue
+        </Button>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
+    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+      <SansText
+        style={{
+          fontSize: 11,
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+          letterSpacing: 3,
+          marginBottom: spacing.md,
+        }}
+      >
+        Breathing Challenge
+      </SansText>
       <Animated.View
         style={[
           {
@@ -138,495 +1269,142 @@ const BreathingCircle = ({ color, onComplete }: { color: string; onComplete: () 
       <SansText style={{ marginTop: spacing.sm, fontSize: 12, color: colors.textMuted }}>
         {2 - cycles} cycle{2 - cycles !== 1 ? 's' : ''} remaining
       </SansText>
-    </View>
-  );
-};
-
-// Level 1: Simple confirmation
-const ConfirmChallenge = ({
-  onComplete,
-  onCancel,
-  color,
-}: {
-  onComplete: () => void;
-  onCancel: () => void;
-  color: string;
-}) => (
-  <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-    <View
-      style={{
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: colors.dangerMuted,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: spacing.lg,
-      }}
-    >
-      <Ionicons name="warning-outline" size={40} color={colors.danger} />
-    </View>
-    <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
-      Are you sure?
-    </SerifText>
-    <SansText
-      style={{
-        fontSize: 14,
-        color: colors.textTertiary,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: spacing.xl,
-        paddingHorizontal: spacing.lg,
-      }}
-    >
-      Ending your session early will reduce your focus score and break your momentum.
-    </SansText>
-    <View style={{ width: '100%', gap: spacing.sm }}>
-      <Button onPress={onCancel} color={color} size="lg" fullWidth>
-        Keep Going
-      </Button>
-      <Button onPress={onComplete} variant="danger" size="lg" fullWidth>
-        End Session
-      </Button>
-    </View>
-  </View>
-);
-
-// Level 2: Breathing delay
-const DelayChallenge = ({
-  onComplete,
-  onCancel,
-  color,
-}: {
-  onComplete: () => void;
-  onCancel: () => void;
-  color: string;
-}) => {
-  const [breathingComplete, setBreathingComplete] = useState(false);
-
-  if (!breathingComplete) {
-    return (
-      <View style={{ alignItems: 'center' }}>
-        <SansText
-          style={{
-            fontSize: 11,
-            color: colors.textMuted,
-            textTransform: 'uppercase',
-            letterSpacing: 3,
-            marginBottom: spacing.md,
-          }}
-        >
-          Take a moment to reflect
-        </SansText>
-        <BreathingCircle color={color} onComplete={() => setBreathingComplete(true)} />
-        <Pressable onPress={onCancel} style={{ padding: spacing.md }}>
-          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
-            Cancel
-          </SansText>
-        </Pressable>
-      </View>
-    );
-  }
-
-  return <ConfirmChallenge onComplete={onComplete} onCancel={onCancel} color={color} />;
-};
-
-// Level 3: Math problem
-const MathChallenge = ({
-  onComplete,
-  onCancel,
-  color,
-}: {
-  onComplete: () => void;
-  onCancel: () => void;
-  color: string;
-}) => {
-  const [problem] = useState(() => generateMathProblem());
-  const [answer, setAnswer] = useState('');
-  const [error, setError] = useState(false);
-
-  const handleSubmit = () => {
-    if (parseInt(answer) === problem.answer) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onComplete();
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(true);
-      setAnswer('');
-      setTimeout(() => setError(false), 500);
-    }
-  };
-
-  return (
-    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: `${color}20`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.lg,
-        }}
-      >
-        <Ionicons name="calculator-outline" size={36} color={color} />
-      </View>
-      <SansText
-        style={{
-          fontSize: 11,
-          color: colors.textMuted,
-          textTransform: 'uppercase',
-          letterSpacing: 3,
-          marginBottom: spacing.sm,
-        }}
-      >
-        Solve to continue
-      </SansText>
-      <SerifText style={{ fontSize: 36, color: colors.textPrimary, marginBottom: spacing.lg }}>
-        {problem.a} {problem.operator} {problem.b} = ?
-      </SerifText>
-      <TextInput
-        value={answer}
-        onChangeText={setAnswer}
-        keyboardType="number-pad"
-        placeholder="Your answer"
-        placeholderTextColor={colors.textMuted}
-        style={{
-          width: '100%',
-          backgroundColor: error ? colors.dangerMuted : colors.surface,
-          borderWidth: 2,
-          borderColor: error ? colors.danger : colors.border,
-          borderRadius: radius.xl,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          fontSize: 24,
-          color: colors.textPrimary,
-          textAlign: 'center',
-          marginBottom: spacing.lg,
-        }}
-      />
-      <View style={{ width: '100%', gap: spacing.sm }}>
-        <Button
-          onPress={handleSubmit}
-          color={color}
-          size="lg"
-          fullWidth
-          disabled={!answer}
-        >
-          Submit
-        </Button>
-        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
-          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
-            Keep focusing instead
-          </SansText>
-        </Pressable>
-      </View>
-    </View>
-  );
-};
-
-// Level 3+: Typing challenge
-const TypingChallenge = ({
-  onComplete,
-  onCancel,
-  color,
-}: {
-  onComplete: () => void;
-  onCancel: () => void;
-  color: string;
-}) => {
-  const [phrase] = useState(() => TYPING_PHRASES[Math.floor(Math.random() * TYPING_PHRASES.length)]);
-  const [input, setInput] = useState('');
-  const isCorrect = input.toLowerCase().trim() === phrase.toLowerCase();
-
-  useEffect(() => {
-    if (isCorrect) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(onComplete, 300);
-    }
-  }, [isCorrect, onComplete]);
-
-  return (
-    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: `${color}20`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.lg,
-        }}
-      >
-        <Ionicons name="text-outline" size={36} color={color} />
-      </View>
-      <SansText
-        style={{
-          fontSize: 11,
-          color: colors.textMuted,
-          textTransform: 'uppercase',
-          letterSpacing: 3,
-          marginBottom: spacing.md,
-        }}
-      >
-        Type this phrase to continue
-      </SansText>
-      <SerifText
-        style={{
-          fontSize: 20,
-          color: colors.textSecondary,
-          textAlign: 'center',
-          marginBottom: spacing.lg,
-          fontStyle: 'italic',
-        }}
-      >
-        "{phrase}"
-      </SerifText>
-      <TextInput
-        value={input}
-        onChangeText={setInput}
-        placeholder="Type the phrase above..."
-        placeholderTextColor={colors.textMuted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={{
-          width: '100%',
-          backgroundColor: isCorrect ? `${colors.success}20` : colors.surface,
-          borderWidth: 2,
-          borderColor: isCorrect ? colors.success : colors.border,
-          borderRadius: radius.xl,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          fontSize: 16,
-          color: colors.textPrimary,
-          textAlign: 'center',
-          marginBottom: spacing.lg,
-        }}
-      />
-      <Pressable onPress={onCancel} style={{ padding: spacing.md }}>
+      <Pressable onPress={onCancel} style={{ padding: spacing.md, marginTop: spacing.lg }}>
         <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
-          Keep focusing instead
+          Go back to what I was doing
         </SansText>
       </Pressable>
     </View>
   );
 };
 
-// Physical tasks
-const PHYSICAL_TASKS = [
-  { task: 'jumping jacks', count: 10, icon: 'fitness-outline' as const },
-  { task: 'deep squats', count: 10, icon: 'body-outline' as const },
-  { task: 'push-ups', count: 5, icon: 'barbell-outline' as const },
-  { task: 'standing stretches', count: 30, unit: 'seconds', icon: 'walk-outline' as const },
-];
+// ==================== AI VERIFIED PHOTO CHALLENGE ====================
+interface AIVerifiedChallengeConfig {
+  title: string;
+  description: string;
+  instruction: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  verificationType: VerificationType;
+  successTitle: string;
+  successMessage: string;
+}
 
-// Physical challenge
-const PhysicalChallenge = ({
-  onComplete,
-  onCancel,
-  color,
-}: {
-  onComplete: () => void;
-  onCancel: () => void;
-  color: string;
-}) => {
-  const [task] = useState(() => PHYSICAL_TASKS[Math.floor(Math.random() * PHYSICAL_TASKS.length)]);
-  const [countdown, setCountdown] = useState(task.unit === 'seconds' ? task.count : 15);
-  const [isActive, setIsActive] = useState(false);
-  const [isDone, setIsDone] = useState(false);
-
-  useEffect(() => {
-    if (!isActive || isDone) return;
-
-    const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          setIsDone(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isActive, isDone]);
-
-  if (isDone) {
-    return (
-      <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-        <Animated.View
-          entering={ZoomIn.duration(300).springify()}
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: `${colors.success}20`,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: spacing.lg,
-          }}
-        >
-          <Ionicons name="checkmark-circle" size={48} color={colors.success} />
-        </Animated.View>
-        <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
-          Great work!
-        </SerifText>
-        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl }}>
-          You completed the physical challenge
-        </SansText>
-        <Button onPress={onComplete} color={color} size="lg" fullWidth>
-          Continue
-        </Button>
-      </View>
-    );
-  }
-
-  return (
-    <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: `${color}20`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.lg,
-        }}
-      >
-        <Ionicons name={task.icon} size={36} color={color} />
-      </View>
-      <SansText
-        style={{
-          fontSize: 11,
-          color: colors.textMuted,
-          textTransform: 'uppercase',
-          letterSpacing: 3,
-          marginBottom: spacing.sm,
-        }}
-      >
-        Physical Challenge
-      </SansText>
-      <SerifText style={{ fontSize: 28, color: colors.textPrimary, marginBottom: spacing.sm, textAlign: 'center' }}>
-        Do {task.count} {task.task}
-      </SerifText>
-      {isActive ? (
-        <View style={{ alignItems: 'center', marginVertical: spacing.lg }}>
-          <SansText style={{ fontSize: 64, color: color, fontWeight: '200' }}>
-            {countdown}
-          </SansText>
-          <SansText style={{ fontSize: 14, color: colors.textMuted }}>
-            {task.unit === 'seconds' ? 'seconds remaining' : 'seconds to complete'}
-          </SansText>
-        </View>
-      ) : (
-        <SansText
-          style={{
-            fontSize: 14,
-            color: colors.textTertiary,
-            textAlign: 'center',
-            marginBottom: spacing.lg,
-            paddingHorizontal: spacing.md,
-          }}
-        >
-          Take a moment to move your body and reset your mind.
-        </SansText>
-      )}
-      <View style={{ width: '100%', gap: spacing.sm }}>
-        {!isActive ? (
-          <Button onPress={() => setIsActive(true)} color={color} size="lg" fullWidth>
-            Start Challenge
-          </Button>
-        ) : null}
-        <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
-          <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
-            Keep focusing instead
-          </SansText>
-        </Pressable>
-      </View>
-    </View>
-  );
+const AI_CHALLENGE_CONFIGS: Record<string, AIVerifiedChallengeConfig> = {
+  prove_outside: {
+    title: 'Prove You\'re Outside',
+    description: 'The algorithm wants you inside scrolling. Prove you chose differently.',
+    instruction: 'Take a photo showing you\'re outside - sky, trees, street, anything outdoors.',
+    icon: 'leaf-outline',
+    verificationType: 'outside',
+    successTitle: 'Outside confirmed!',
+    successMessage: 'The real world beats the feed every time.',
+  },
+  prove_water: {
+    title: 'Show Me Water',
+    description: 'Your brain is dehydrated from dopamine. Give it what it actually needs.',
+    instruction: 'Take a photo of yourself with a glass or bottle of water.',
+    icon: 'water-outline',
+    verificationType: 'water',
+    successTitle: 'Hydration verified!',
+    successMessage: 'Your body over the algorithm. Always.',
+  },
+  prove_standing: {
+    title: 'Get On Your Feet',
+    description: 'You\'ve been sitting and scrolling. Stand up and prove it.',
+    instruction: 'Take a photo that shows you\'re standing up - show the floor beneath you.',
+    icon: 'body-outline',
+    verificationType: 'standing',
+    successTitle: 'Standing confirmed!',
+    successMessage: 'Movement is medicine. The couch can wait.',
+  },
 };
 
-// Photo prompts
-const PHOTO_PROMPTS = [
-  'Take a photo of your workspace',
-  'Take a photo of something green',
-  'Take a photo of the sky or ceiling',
-  'Take a selfie with a smile',
-];
-
-// Photo challenge
-const PhotoChallenge = ({
+const AIVerifiedChallenge = ({
+  challengeKey,
   onComplete,
   onCancel,
   color,
 }: {
+  challengeKey: string;
   onComplete: () => void;
   onCancel: () => void;
   color: string;
 }) => {
-  const [prompt] = useState(() => PHOTO_PROMPTS[Math.floor(Math.random() * PHOTO_PROMPTS.length)]);
+  const config = AI_CHALLENGE_CONFIGS[challengeKey];
   const [photo, setPhoto] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [failed, setFailed] = useState(false);
 
   const takePhoto = async () => {
-    setIsLoading(true);
     try {
-      // Dynamic import to avoid crash in Expo Go
-      const ImagePicker = await import('expo-image-picker');
-
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        // If no camera permission, skip to confirm
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        onComplete();
+        Alert.alert('Camera needed', 'We need camera access to verify your challenge');
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: false,
-        quality: 0.5,
+        quality: 0.7,
       });
 
       if (!result.canceled && result.assets[0]) {
         setPhoto(result.assets[0].uri);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setFailed(false);
+        verifyPhoto(result.assets[0].uri);
       }
     } catch (error) {
       console.log('Camera error:', error);
-      // If camera fails, just complete the challenge
-      onComplete();
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  if (photo) {
+  const verifyPhoto = async (uri: string) => {
+    setVerifying(true);
+    try {
+      const result = await verifyChallenge(uri, config.verificationType);
+
+      if (result.verified) {
+        setVerified(true);
+        setVerificationMessage(result.message);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setFailed(true);
+        setVerificationMessage(result.message);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch (error) {
+      // On error, be lenient
+      setVerified(true);
+      setVerificationMessage(config.successMessage);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  if (verified) {
     return (
       <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
         <Animated.View
           entering={ZoomIn.duration(300).springify()}
           style={{
-            width: 160,
-            height: 160,
-            borderRadius: 16,
+            width: 100,
+            height: 100,
+            borderRadius: 50,
             overflow: 'hidden',
             marginBottom: spacing.lg,
-            borderWidth: 3,
+            borderWidth: 4,
             borderColor: colors.success,
           }}
         >
-          <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} />
+          {photo && <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} />}
         </Animated.View>
         <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.sm }}>
-          Photo taken!
+          {config.successTitle}
         </SerifText>
-        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl }}>
-          Challenge completed successfully
+        <SansText style={{ fontSize: 14, color: colors.textTertiary, marginBottom: spacing.xl, textAlign: 'center' }}>
+          {verificationMessage}
         </SansText>
         <Button onPress={onComplete} color={color} size="lg" fullWidth>
           Continue
@@ -637,58 +1415,102 @@ const PhotoChallenge = ({
 
   return (
     <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          backgroundColor: `${color}20`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.lg,
-        }}
-      >
-        <Ionicons name="camera-outline" size={36} color={color} />
-      </View>
+      {photo && !verifying ? (
+        <View
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 16,
+            overflow: 'hidden',
+            marginBottom: spacing.lg,
+            borderWidth: 3,
+            borderColor: failed ? colors.danger : colors.border,
+          }}
+        >
+          <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} />
+        </View>
+      ) : (
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: `${color}20`,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+          }}
+        >
+          {verifying ? (
+            <ActivityIndicator size="large" color={color} />
+          ) : (
+            <Ionicons name={config.icon} size={40} color={color} />
+          )}
+        </View>
+      )}
+
       <SansText
         style={{
           fontSize: 11,
-          color: colors.textMuted,
+          color: isAIVerificationAvailable() ? colors.success : colors.textMuted,
           textTransform: 'uppercase',
           letterSpacing: 3,
           marginBottom: spacing.sm,
         }}
       >
-        Photo Challenge
+        {isAIVerificationAvailable() ? 'AI Verified Challenge' : 'Photo Challenge'}
       </SansText>
-      <SerifText
-        style={{
-          fontSize: 22,
-          color: colors.textPrimary,
-          marginBottom: spacing.md,
-          textAlign: 'center',
-        }}
-      >
-        {prompt}
+
+      <SerifText style={{ fontSize: 24, color: colors.textPrimary, marginBottom: spacing.md, textAlign: 'center' }}>
+        {config.title}
       </SerifText>
-      <SansText
-        style={{
-          fontSize: 14,
-          color: colors.textTertiary,
-          textAlign: 'center',
-          marginBottom: spacing.xl,
-          paddingHorizontal: spacing.md,
-        }}
-      >
-        This helps break the scroll reflex and brings awareness to the present moment.
-      </SansText>
+
+      {verifying ? (
+        <SansText style={{ fontSize: 16, color: color, marginBottom: spacing.lg }}>
+          Verifying with AI...
+        </SansText>
+      ) : failed ? (
+        <View style={{ marginBottom: spacing.lg }}>
+          <SansText style={{ fontSize: 14, color: colors.danger, textAlign: 'center', marginBottom: spacing.sm }}>
+            {verificationMessage}
+          </SansText>
+          <SansText style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
+            Try again with a clearer photo.
+          </SansText>
+        </View>
+      ) : (
+        <>
+          <SansText
+            style={{
+              fontSize: 14,
+              color: colors.textTertiary,
+              textAlign: 'center',
+              marginBottom: spacing.sm,
+            }}
+          >
+            {config.description}
+          </SansText>
+          <SansText
+            style={{
+              fontSize: 13,
+              color: colors.textMuted,
+              textAlign: 'center',
+              marginBottom: spacing.xl,
+              fontStyle: 'italic',
+            }}
+          >
+            {config.instruction}
+          </SansText>
+        </>
+      )}
+
       <View style={{ width: '100%', gap: spacing.sm }}>
-        <Button onPress={takePhoto} color={color} size="lg" fullWidth loading={isLoading}>
-          Open Camera
+        <Button onPress={takePhoto} color={color} size="lg" fullWidth disabled={verifying}>
+          {photo ? 'Take Another Photo' : 'Open Camera'}
         </Button>
         <Pressable onPress={onCancel} style={{ padding: spacing.md, alignItems: 'center' }}>
           <SansText style={{ color: colors.textMuted, fontSize: 14 }}>
-            Keep focusing instead
+            Go back to what I was doing
           </SansText>
         </Pressable>
       </View>
@@ -696,75 +1518,46 @@ const PhotoChallenge = ({
   );
 };
 
-// Challenge types for level 3
-type Level3ChallengeType = 'math' | 'typing' | 'physical' | 'photo';
-
+// ==================== MAIN COMPONENT ====================
 export function FrictionChallenge({
   level,
   onComplete,
   onCancel,
   themeColor,
 }: FrictionChallengeProps) {
-  const [stage, setStage] = useState(0);
-  // Pick a random challenge type for level 3 on mount
-  const [challengeType] = useState<Level3ChallengeType>(() => {
-    const types: Level3ChallengeType[] = ['math', 'typing', 'physical', 'photo'];
-    return types[Math.floor(Math.random() * types.length)];
-  });
-
-  // Level 1: Just confirmation
-  // Level 2: Breathing + confirmation
-  // Level 3: Random challenge (math/typing/physical/photo) + confirmation
-
-  const renderLevel3Challenge = () => {
-    switch (challengeType) {
-      case 'math':
-        return (
-          <MathChallenge
-            onComplete={() => setStage(1)}
-            onCancel={onCancel}
-            color={themeColor}
-          />
-        );
-      case 'typing':
-        return (
-          <TypingChallenge
-            onComplete={() => setStage(1)}
-            onCancel={onCancel}
-            color={themeColor}
-          />
-        );
-      case 'physical':
-        return (
-          <PhysicalChallenge
-            onComplete={() => setStage(1)}
-            onCancel={onCancel}
-            color={themeColor}
-          />
-        );
-      case 'photo':
-        return (
-          <PhotoChallenge
-            onComplete={() => setStage(1)}
-            onCancel={onCancel}
-            color={themeColor}
-          />
-        );
-    }
-  };
+  const [challengeType] = useState<ChallengeType>(() => getRandomChallenge(level));
 
   const renderChallenge = () => {
-    switch (level) {
-      case 1:
-        return <ConfirmChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
-      case 2:
-        return <DelayChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
-      case 3:
+    switch (challengeType) {
+      case 'call_someone':
+        return <CallSomeoneChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'text_loved_one':
+        return <TextLovedOneChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'contact_parent':
+        return <ContactParentChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'go_outside':
+        return <GoOutsideChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'drink_water':
+        return <DrinkWaterChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'gratitude':
+        return <GratitudeChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'intention':
+        return <IntentionChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'wait':
+        return <WaitChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'walk_away':
+        return <WalkAwayChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'deep_breath':
+        return <DeepBreathChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      // AI Verified Challenges
+      case 'prove_outside':
+        return <AIVerifiedChallenge challengeKey="prove_outside" onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'prove_water':
+        return <AIVerifiedChallenge challengeKey="prove_water" onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+      case 'prove_standing':
+        return <AIVerifiedChallenge challengeKey="prove_standing" onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
       default:
-        if (stage === 0) {
-          return renderLevel3Challenge();
-        }
-        return <ConfirmChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
+        return <WaitChallenge onComplete={onComplete} onCancel={onCancel} color={themeColor} />;
     }
   };
 
@@ -789,11 +1582,12 @@ export function FrictionChallenge({
         style={{
           width: '100%',
           maxWidth: 360,
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           borderRadius: radius['2xl'],
           borderWidth: 1,
           borderColor: colors.border,
           padding: spacing.xl,
+          maxHeight: '85%',
         }}
       >
         {renderChallenge()}

@@ -16,25 +16,36 @@ export interface ScreenTimeModuleInterface {
   stopBlocking(): Promise<boolean>;
   startFocusSession(durationMinutes: number): Promise<boolean>;
   endFocusSession(): Promise<boolean>;
+  enableAlwaysOnFriction?(frictionLevel: number): Promise<boolean>;
+  disableAlwaysOnFriction?(): Promise<boolean>;
   // Android specific
   openUsageSettings?(): Promise<boolean>;
   getCurrentForegroundApp?(): Promise<{ packageName: string; lastTimeUsed: number } | null>;
 }
 
+// iOS stub implementation (until Screen Time entitlement is approved)
+const iOSStub: ScreenTimeModuleInterface = {
+  checkAuthorization: async () => false,
+  requestAuthorization: async () => false,
+  getInstalledApps: async () => [],
+  setBlockedApps: async () => true,
+  startBlocking: async () => true,
+  stopBlocking: async () => true,
+  startFocusSession: async () => true,
+  endFocusSession: async () => true,
+  enableAlwaysOnFriction: async () => false,
+  disableAlwaysOnFriction: async () => true,
+};
+
 // Export the native module with type safety
+// iOS: Uses real native module (Family Controls entitlement APPROVED)
+// Android: Uses the native module
 export const ScreenTime: ScreenTimeModuleInterface | null =
   ScreenTimeModule || null;
 
 // Helper to check if the module is available
 export function isScreenTimeAvailable(): boolean {
-  if (Platform.OS === 'ios') {
-    const version = parseInt(Platform.Version as string, 10);
-    return version >= 15 && ScreenTimeModule != null;
-  }
-  if (Platform.OS === 'android') {
-    return ScreenTimeModule != null;
-  }
-  return false;
+  return ScreenTimeModule != null;
 }
 
 export default ScreenTime;
