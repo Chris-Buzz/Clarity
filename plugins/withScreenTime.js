@@ -19,7 +19,7 @@ const {
 // provisioned build is set up.
 const withScreenTimeEntitlements = (config) => {
   return withEntitlementsPlist(config, (config) => {
-    // config.modResults['com.apple.developer.family-controls'] = true;
+    config.modResults['com.apple.developer.family-controls'] = true;
     return config;
   });
 };
