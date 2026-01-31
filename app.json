@@ -63,6 +63,7 @@
     "experiments": {
       "typedRoutes": true
     },
+    "runtimeVersion": "1.0.0",
     "extra": {
       "eas": {
         "projectId": "3e1b46d1-8c22-48c1-9393-4c0d3fbadd43"
