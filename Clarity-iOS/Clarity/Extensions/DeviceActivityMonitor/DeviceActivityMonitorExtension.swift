@@ -4,7 +4,7 @@ import Foundation
 
 class ClarityMonitorExtension: DeviceActivityMonitor {
     let store = ManagedSettingsStore()
-    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         // Daily monitoring started — apply shields if configured

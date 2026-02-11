@@ -9,7 +9,7 @@ class FocusSessionBlockingService {
     static let shared = FocusSessionBlockingService()
 
     private let sessionStore = ManagedSettingsStore(named: .init("focusSession"))
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     private init() {}
 

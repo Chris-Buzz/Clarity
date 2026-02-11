@@ -191,7 +191,7 @@ struct BudgetConfigView: View {
         }
 
         // Sync max unlocks to shared defaults for the service
-        let defaults = UserDefaults(suiteName: "group.com.clarity.focus")
+        let defaults = UserDefaults(suiteName: "group.com.clarity-focus")
         defaults?.set(maxUnlocks, forKey: "maxEmergencyUnlocks")
         defaults?.set(budgetMinutes, forKey: "budgetMinutes")
 

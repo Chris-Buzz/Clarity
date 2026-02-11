@@ -9,7 +9,7 @@ struct ClarityEntry: TimelineEntry {
 }
 
 struct ClarityProvider: TimelineProvider {
-    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     func placeholder(in context: Context) -> ClarityEntry {
         ClarityEntry(date: Date(), clarityScore: 78, streak: 4, screenTimeMinutes: 123)

@@ -1,0 +1,169 @@
+name: Clarity
+options:
+  bundleIdPrefix: com.clarity-focus
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.2"
+  generateEmptyDirectories: false
+  groupSortPosition: top
+
+settings:
+  base:
+    INFOPLIST_FILE: Clarity/Info.plist
+    CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
+    SUPPORTED_INTERFACE_ORIENTATIONS: UIInterfaceOrientationPortrait
+    SWIFT_VERSION: "5.9"
+
+targets:
+
+  # ============================================
+  # MAIN APP
+  # ============================================
+  Clarity:
+    type: application
+    platform: iOS
+    sources:
+      - path: Clarity
+        excludes:
+          - "Extensions/**"
+    resources:
+      - path: Clarity/Fonts
+        optional: true
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus
+        INFOPLIST_FILE: Clarity/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      path: Clarity/Clarity.entitlements
+    dependencies:
+      - target: ClarityShieldConfiguration
+      - target: ClarityShieldAction
+      - target: ClarityDeviceActivityMonitor
+      - target: ClarityDeviceActivityReport
+      - target: ClarityWidget
+
+  # ============================================
+  # SHIELD CONFIGURATION EXTENSION
+  # ============================================
+  ClarityShieldConfiguration:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ShieldConfiguration
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldConfiguration
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.clarity-focus
+        com.apple.developer.family-controls: true
+    info:
+      path: Clarity/Extensions/ShieldConfiguration/Info.plist
+      properties:
+        CFBundleDisplayName: ClarityShieldConfiguration
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldConfiguration
+
+  # ============================================
+  # SHIELD ACTION EXTENSION
+  # ============================================
+  ClarityShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ShieldAction
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldAction
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.clarity-focus
+        com.apple.developer.family-controls: true
+    info:
+      path: Clarity/Extensions/ShieldAction/Info.plist
+      properties:
+        CFBundleDisplayName: ClarityShieldAction
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettings.shield-action
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldAction
+
+  # ============================================
+  # DEVICE ACTIVITY MONITOR EXTENSION
+  # ============================================
+  ClarityDeviceActivityMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/DeviceActivityMonitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityMonitor
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.clarity-focus
+        com.apple.developer.family-controls: true
+    info:
+      path: Clarity/Extensions/DeviceActivityMonitor/Info.plist
+      properties:
+        CFBundleDisplayName: ClarityDeviceActivityMonitor
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.DeviceActivity.monitor
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityMonitorExtension
+
+  # ============================================
+  # DEVICE ACTIVITY REPORT EXTENSION
+  # ============================================
+  ClarityDeviceActivityReport:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/DeviceActivityReport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityReport
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.clarity-focus
+        com.apple.developer.family-controls: true
+    info:
+      path: Clarity/Extensions/DeviceActivityReport/Info.plist
+      properties:
+        CFBundleDisplayName: ClarityDeviceActivityReport
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.DeviceActivity.report
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityDeviceActivityReport
+
+  # ============================================
+  # WIDGET EXTENSION
+  # ============================================
+  ClarityWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ClarityWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.Widget
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    entitlements:
+      properties:
+        com.apple.security.application-groups:
+          - group.com.clarity-focus
+    info:
+      path: Clarity/Extensions/ClarityWidget/Info.plist
+      properties:
+        CFBundleDisplayName: ClarityWidget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

@@ -27,7 +27,7 @@ xcodebuild -scheme Clarity -destination 'platform=iOS Simulator,name=iPhone 16 P
 xcodebuild clean -scheme Clarity -project Clarity-iOS/Clarity.xcodeproj
 ```
 
-**Key:** 6 targets — main app + ShieldConfiguration + ShieldAction + DeviceActivityMonitor + DeviceActivityReport + Widget. All share App Group `group.com.clarity.focus`.
+**Key:** 6 targets — main app + ShieldConfiguration + ShieldAction + DeviceActivityMonitor + DeviceActivityReport + Widget. All share App Group `group.com.clarity-focus`.
 
 ## Architecture
 
@@ -38,7 +38,7 @@ All source code is in `Clarity-iOS/Clarity/`.
 - **Data:** SwiftData @Model classes, persisted automatically
 - **Shared state:** App Group UserDefaults for extension communication
 - **Navigation:** NavigationStack with custom tab bar (text labels, no icons)
-- **Bundle ID:** com.clarity.focus
+- **Bundle ID:** com.clarity-focus
 
 ### Key Files
 
@@ -103,7 +103,7 @@ All source code is in `Clarity-iOS/Clarity/`.
 
 ## Build Configuration
 
-- **Bundle ID:** com.clarity.focus
+- **Bundle ID:** com.clarity-focus
 - **Orientation:** Portrait only
 - **Entitlements:** Family Controls, App Groups, HealthKit, WiFi Info, StoreKit, Background Fetch
 - Family Controls entitlement requires manually provisioned builds

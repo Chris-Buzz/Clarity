@@ -3,7 +3,7 @@ import SwiftData
 import Foundation
 
 class DataCleanupService {
-    static let taskIdentifier = "com.clarity.focus.dataCleanup"
+    static let taskIdentifier = "com.clarity-focus.dataCleanup"
 
     /// Register the background task in ClarityApp.init
     static func registerBackgroundTask() {

@@ -12,7 +12,7 @@ class WiFiGateService: NSObject, CLLocationManagerDelegate {
 
     private let locationManager = CLLocationManager()
     private let wifiStore = ManagedSettingsStore(named: .init("wifiGate"))
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
     private var monitorTimer: Timer?
 
     var currentSSID: String? {

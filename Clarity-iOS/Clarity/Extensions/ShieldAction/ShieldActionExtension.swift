@@ -1,7 +1,7 @@
 import ManagedSettings
 
 class ClarityShieldAction: ShieldActionDelegate {
-    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     /// Whether a hard lock is active (budget exceeded or focus session running).
     /// When hard-locked, the secondary button does nothing — shield stays.

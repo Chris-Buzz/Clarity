@@ -4,7 +4,7 @@ import Foundation
 /// Shared storage between the main app and extensions (Shield, DeviceActivity)
 /// via App Group UserDefaults and file containers.
 struct AppGroupStorage {
-    static let appGroupID = "group.com.clarity.focus"
+    static let appGroupID = "group.com.clarity-focus"
 
     static var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupID)

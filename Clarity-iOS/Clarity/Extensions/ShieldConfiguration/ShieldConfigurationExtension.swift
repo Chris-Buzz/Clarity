@@ -3,7 +3,7 @@ import ManagedSettings
 import UIKit
 
 class ClarityShieldConfiguration: ShieldConfigurationDataSource {
-    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     private let bgColor = UIColor(red: 3/255, green: 3/255, blue: 3/255, alpha: 1)
     private let orangeColor = UIColor(red: 249/255, green: 115/255, blue: 22/255, alpha: 1)

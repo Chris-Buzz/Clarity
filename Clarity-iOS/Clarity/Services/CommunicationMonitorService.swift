@@ -13,7 +13,7 @@ import Foundation
 /// 5. Main app reads verification status
 class CommunicationMonitorService {
     static let shared = CommunicationMonitorService()
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     /// Start monitoring Communication category for a 30-second threshold.
     /// Called when a "text someone" prosocial challenge is issued.

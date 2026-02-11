@@ -8,8 +8,8 @@ class SubscriptionService {
     static let shared = SubscriptionService()
 
     // Product IDs (configure in App Store Connect)
-    static let monthlyProductId = "com.clarity.focus.monthly"
-    static let yearlyProductId = "com.clarity.focus.yearly"
+    static let monthlyProductId = "com.clarity-focus.monthly"
+    static let yearlyProductId = "com.clarity-focus.yearly"
 
     var products: [Product] = []
     var purchasedSubscription: Product? = nil

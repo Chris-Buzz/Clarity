@@ -16,7 +16,7 @@ open Clarity.xcodeproj
 xcodebuild -scheme Clarity -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
 ```
 
-**Key:** 6 targets exist — main app + ShieldConfiguration + ShieldAction + DeviceActivityMonitor + DeviceActivityReport + Widget. All share App Group `group.com.clarity.focus`.
+**Key:** 6 targets exist — main app + ShieldConfiguration + ShieldAction + DeviceActivityMonitor + DeviceActivityReport + Widget. All share App Group `group.com.clarity-focus`.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ xcodebuild -scheme Clarity -destination 'platform=iOS Simulator,name=iPhone 16 P
 - **Data:** SwiftData @Model classes, persisted automatically
 - **Shared state:** App Group UserDefaults for extension communication
 - **Navigation:** NavigationStack with custom tab bar (text labels, no icons)
-- **Bundle ID:** com.clarity.focus
+- **Bundle ID:** com.clarity-focus
 
 ### Key Files
 
@@ -91,4 +91,4 @@ All thresholds user-configurable. Night mode (10pm-6am) halves thresholds.
 - `DeviceActivityMonitor` thresholds trigger progressive friction timing
 - `ShieldConfigurationDataSource` customizes shield UI per friction level
 - HealthKit authorization requested during onboarding step 3
-- App Group (`group.com.clarity.focus`) bridges main app ↔ all extensions
+- App Group (`group.com.clarity-focus`) bridges main app ↔ all extensions

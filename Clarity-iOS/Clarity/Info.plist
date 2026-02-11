@@ -5,7 +5,7 @@
     <key>CFBundleName</key>
     <string>Clarity</string>
     <key>CFBundleIdentifier</key>
-    <string>com.clarity.focus</string>
+    <string>com.clarity-focus</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
@@ -46,7 +46,7 @@
     <string>Clarity uses your location to detect your home WiFi network for WiFi-gated unlocking.</string>
     <key>BGTaskSchedulerPermittedIdentifiers</key>
     <array>
-        <string>com.clarity.focus.data-cleanup</string>
+        <string>com.clarity-focus.data-cleanup</string>
     </array>
     <key>GEMINI_API_KEY</key>
     <string>$(GEMINI_API_KEY)</string>

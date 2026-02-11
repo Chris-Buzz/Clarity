@@ -20,7 +20,7 @@ struct BudgetStatusCard: View {
 
     // Placeholder: real value would come from DeviceActivity reports
     private var minutesUsedToday: Int {
-        let defaults = UserDefaults(suiteName: "group.com.clarity.focus")
+        let defaults = UserDefaults(suiteName: "group.com.clarity-focus")
         return defaults?.integer(forKey: "minutesUsedToday") ?? 0
     }
 

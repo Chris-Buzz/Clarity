@@ -16,7 +16,7 @@ class DailyBudgetService {
     static let shared = DailyBudgetService()
 
     private let budgetStore = ManagedSettingsStore(named: .init("dailyBudget"))
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     // MARK: - State
 

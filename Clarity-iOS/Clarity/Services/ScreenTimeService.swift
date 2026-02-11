@@ -9,7 +9,7 @@ class ScreenTimeService {
     static let shared = ScreenTimeService()
     let center = AuthorizationCenter.shared
     let store = ManagedSettingsStore()
-    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity.focus")
+    let sharedDefaults = UserDefaults(suiteName: "group.com.clarity-focus")
 
     private init() {}
 
