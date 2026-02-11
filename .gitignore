@@ -1,41 +1,50 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+!default.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+xcuserdata/
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
 # macOS
 .DS_Store
+*.swp
+*~.nib
+
+# Provisioning profiles (keep specific ones)
+*.mobileprovision
+!Clarity_AdHoc_FamilyControls.mobileprovision
+
+# Keys and secrets
+.env
+.env.*
 *.pem
+*.p8
+*.p12
+*.key
 
-# local env files
-.env*.local
+# IDE
+.vscode/
+.idea/
 
-# typescript
-*.tsbuildinfo
+# Claude
+.claude/settings.local.json
 
-# generated native folders
-/ios
-/android
+# Build artifacts
+*.ipa
+*.dSYM.zip
+*.dSYM

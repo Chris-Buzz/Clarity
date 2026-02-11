@@ -30,6 +30,7 @@
         html {
             scrollbar-width: none;
             scroll-snap-type: y proximity;
+            overflow-x: hidden;
         }
         html::-webkit-scrollbar { display: none; }
 
@@ -38,8 +39,17 @@
             background: var(--bg);
             color: var(--fg);
             overflow-x: hidden;
+            overscroll-behavior-x: none;
+            -webkit-overflow-scrolling: touch;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Lock all content to vertical scroll only */
+        .scene, .fade, footer {
+            touch-action: pan-y;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         /* ═══════════════════════════════════════

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Clarity</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.clarity.focus</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIColorName</key>
+        <string>LaunchBackground</string>
+    </dict>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>UIAppFonts</key>
+    <array>
+        <string>PlayfairDisplay-Regular.ttf</string>
+        <string>PlayfairDisplay-Italic.ttf</string>
+        <string>PlayfairDisplay-SemiBoldItalic.ttf</string>
+        <string>Outfit-Thin.ttf</string>
+        <string>Outfit-ExtraLight.ttf</string>
+        <string>Outfit-Light.ttf</string>
+        <string>Outfit-Regular.ttf</string>
+        <string>Outfit-Medium.ttf</string>
+        <string>Outfit-SemiBold.ttf</string>
+        <string>SpaceMono-Regular.ttf</string>
+    </array>
+    <key>NSHealthShareUsageDescription</key>
+    <string>Clarity uses health data to show how sleep, activity, and heart rate correlate with your phone usage patterns.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>Clarity saves your mindful minutes from breathing exercises to Apple Health.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>Clarity suggests contacts to call or text as alternatives to scrolling.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Clarity uses your camera for photo-verified challenges like proving you went outside.</string>
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>Clarity sends smart reminders to help you stay intentional with your phone use.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Clarity uses your location to detect your home WiFi network for WiFi-gated unlocking.</string>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.clarity.focus.data-cleanup</string>
+    </array>
+    <key>GEMINI_API_KEY</key>
+    <string>$(GEMINI_API_KEY)</string>
+</dict>
+</plist>
