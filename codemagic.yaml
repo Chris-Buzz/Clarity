@@ -13,13 +13,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier:
-          - com.clarity-focus
-          - com.clarity-focus.ShieldConfiguration
-          - com.clarity-focus.ShieldAction
-          - com.clarity-focus.DeviceActivityMonitor
-          - com.clarity-focus.DeviceActivityReport
-          - com.clarity-focus.Widget
+        bundle_identifier: com.clarity-focus
       vars:
         XCODE_WORKSPACE: "Clarity-iOS/Clarity.xcodeproj"
         XCODE_SCHEME: "Clarity"
