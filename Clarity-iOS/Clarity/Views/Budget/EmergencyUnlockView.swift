@@ -146,6 +146,11 @@ struct EmergencyUnlockView: View {
         typedPhrase.trimmingCharacters(in: .whitespacesAndNewlines) == requiredPhrase
     }
 
+    /// Number of friction bypasses today from the adaptive engine
+    private var bypassCount: Int {
+        AdaptiveFrictionEngine.shared.dailyBypassCount
+    }
+
     // MARK: - Step 2: Wait
 
     private var waitingStep: some View {
@@ -194,6 +199,28 @@ struct EmergencyUnlockView: View {
             .frame(maxWidth: .infinity)
             .background(ClarityColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: ClarityRadius.xl))
+
+            // Bypass count — shown when the user has been bypassing friction today
+            if bypassCount > 0 {
+                VStack(spacing: ClaritySpacing.xs) {
+                    Text("FRICTION BYPASSES TODAY")
+                        .font(ClarityFonts.mono(size: 10))
+                        .tracking(2)
+                        .foregroundStyle(ClarityColors.textMuted)
+
+                    Text("\(bypassCount)")
+                        .font(ClarityFonts.serif(size: 24))
+                        .foregroundStyle(ClarityColors.danger)
+
+                    Text("Wait time escalated because of bypasses.")
+                        .font(ClarityFonts.sans(size: 13))
+                        .foregroundStyle(ClarityColors.textTertiary)
+                }
+                .padding(ClaritySpacing.md)
+                .frame(maxWidth: .infinity)
+                .background(ClarityColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: ClarityRadius.xl))
+            }
         }
         .onDisappear {
             // If user leaves this screen, reset the timer
@@ -203,6 +230,7 @@ struct EmergencyUnlockView: View {
     }
 
     private var waitProgress: CGFloat {
+        guard waitMinutes > 0 else { return 0 }
         let total = Double(waitMinutes * 60)
         let elapsed = total - Double(waitSecondsRemaining)
         return CGFloat(elapsed / total)

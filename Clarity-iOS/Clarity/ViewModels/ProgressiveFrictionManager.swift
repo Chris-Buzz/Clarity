@@ -5,67 +5,53 @@ import SwiftUI
 // MARK: - Friction Level
 
 enum FrictionLevel: Int, CaseIterable {
-    case awareness = 1
-    case prosocialText = 2      // was: breathing — now prompts user to text someone
-    case intentionCheck = 3
-    case prosocialCall = 4      // was: reflection — now prompts user to call someone
-    case strongEncouragement = 5
+    case awareness = 1        // 5 min threshold
+    case breathingGate = 2    // 15 min threshold
+    case intentDeclaration = 3 // 30 min threshold
+    case countdownUnlock = 4  // 45 min threshold
+    case scrollFriction = 5   // 60 min threshold
 
     var title: String {
         switch self {
-        case .awareness:          return "Awareness Nudge"
-        case .prosocialText:      return "Text Someone"
-        case .intentionCheck:     return "Intention Check"
-        case .prosocialCall:      return "Call Someone"
-        case .strongEncouragement: return "Strong Encouragement"
-        }
-    }
-
-    /// Classic (non-prosocial) fallback title for when prosocial mode is disabled
-    var classicTitle: String {
-        switch self {
-        case .awareness:          return "Awareness Nudge"
-        case .prosocialText:      return "Breathing Exercise"
-        case .intentionCheck:     return "Intention Check"
-        case .prosocialCall:      return "Reflection Prompt"
-        case .strongEncouragement: return "Strong Encouragement"
+        case .awareness: return "Awareness"
+        case .breathingGate: return "Breathing Gate"
+        case .intentDeclaration: return "Intent Declaration"
+        case .countdownUnlock: return "Countdown Unlock"
+        case .scrollFriction: return "Scroll Friction"
         }
     }
 
     var description: String {
         switch self {
-        case .awareness:          return "You've been scrolling for a while. Is this intentional?"
-        case .prosocialText:      return "Someone would love to hear from you right now."
-        case .intentionCheck:     return "What were you planning to do? Is this still it?"
-        case .prosocialCall:      return "A quick call can change your whole day."
-        case .strongEncouragement: return "You've spent significant time today. Consider taking a real break."
+        case .awareness: return "A gentle nudge that you've been scrolling"
+        case .breathingGate: return "6-second forced breath before continuing"
+        case .intentDeclaration: return "State why you need this app right now"
+        case .countdownUnlock: return "Escalating timer that gets longer each time"
+        case .scrollFriction: return "Slow-scroll mindful content before re-entry"
         }
     }
 
-    /// Classic (non-prosocial) fallback description
-    var classicDescription: String {
+    var baseThresholdMinutes: Double {
         switch self {
-        case .awareness:          return "You've been scrolling for a while. Is this intentional?"
-        case .prosocialText:      return "Let's take three deep breaths before continuing."
-        case .intentionCheck:     return "What were you planning to do? Is this still it?"
-        case .prosocialCall:      return "How are you feeling right now? Rate your mood."
-        case .strongEncouragement: return "You've spent significant time today. Consider taking a real break."
+        case .awareness: return 5
+        case .breathingGate: return 15
+        case .intentDeclaration: return 30
+        case .countdownUnlock: return 45
+        case .scrollFriction: return 60
         }
     }
 }
 
 // MARK: - Progressive Friction Manager
 
-/// Escalates friction interventions as screen time accumulates.
-/// Thresholds halve during night mode (10pm-6am by default).
+/// Escalates patience-based friction interventions as screen time accumulates.
+/// Thresholds halve during night mode (10pm-6am) and compress further with
+/// adaptive friction (doomscroll / bypass detection). Multipliers stack multiplicatively.
 @Observable
 class ProgressiveFrictionManager {
     var currentLevel: Int = 0 // 0 = no friction active
     var isShowingFriction: Bool = false
     var activeFriction: FrictionLevel?
-
-    /// When true, layers 2 and 4 use prosocial challenges instead of classic friction
-    var prosocialEnabled: Bool = true
 
     /// Default thresholds in minutes; user can customize via UserProfile.frictionThresholds
     var thresholds: [Int] = [5, 15, 30, 45, 60]
@@ -73,11 +59,25 @@ class ProgressiveFrictionManager {
     /// Tracks which thresholds have already fired this session to avoid repeat triggers
     private var firedThresholds: Set<Int> = []
 
+    // MARK: - Multipliers
+
+    /// Night mode is active between 10pm and 6am, halving all thresholds
+    var nightModeMultiplier: Double {
+        isNightMode() ? 0.5 : 1.0
+    }
+
+    /// Adaptive friction multiplier from the engine (1.0x normal, 0.25x extreme)
+    var adaptiveMultiplier: Double {
+        AdaptiveFrictionEngine.shared.frictionMultiplier
+    }
+
     // MARK: - Threshold Check
 
     /// Returns the friction level if a new threshold was just crossed.
+    /// Effective threshold = base * nightModeMultiplier * adaptiveMultiplier.
     func checkThreshold(minutesUsed: Int) -> FrictionLevel? {
-        let effective = isNightMode() ? thresholds.map { $0 / 2 } : thresholds
+        let combinedMultiplier = nightModeMultiplier * adaptiveMultiplier
+        let effective = thresholds.map { Swift.max(Int(Double($0) * combinedMultiplier), 1) }
 
         for (index, threshold) in effective.enumerated() {
             guard index < FrictionLevel.allCases.count else { break }
@@ -94,13 +94,26 @@ class ProgressiveFrictionManager {
         return nil
     }
 
-    /// Whether the given friction level should show a prosocial challenge
-    func isProsocialLevel(_ level: FrictionLevel) -> Bool {
-        prosocialEnabled && (level == .prosocialText || level == .prosocialCall)
+    /// Effective threshold for a given level (after multipliers)
+    func effectiveThreshold(for level: FrictionLevel) -> Int {
+        let baseIndex = level.rawValue - 1
+        guard baseIndex < thresholds.count else { return Int(level.baseThresholdMinutes) }
+        let base = Double(thresholds[baseIndex])
+        return Swift.max(Int(base * nightModeMultiplier * adaptiveMultiplier), 1)
     }
 
-    /// Dismisses the current friction overlay so the user can continue.
-    func handleFrictionComplete() {
+    /// Dismisses the current friction overlay and records a completion.
+    func handleFrictionComplete(level: FrictionLevel) {
+        PatienceManager.shared.recordFrictionCompletion()
+        isShowingFriction = false
+        activeFriction = nil
+    }
+
+    /// Called when user bypasses (cancels) friction instead of completing it.
+    /// Records the bypass in both PatienceManager and AdaptiveFrictionEngine.
+    func handleFrictionBypassed(level: FrictionLevel) {
+        PatienceManager.shared.recordFrictionBypass()
+        AdaptiveFrictionEngine.shared.recordBypass()
         isShowingFriction = false
         activeFriction = nil
     }

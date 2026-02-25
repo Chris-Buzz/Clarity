@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// Configurable friction thresholds: escalating challenges at different screen time levels.
+/// Configurable friction thresholds: escalating patience challenges at different screen time levels.
 struct FrictionConfigView: View {
     var profile: UserProfile?
 
@@ -11,11 +11,11 @@ struct FrictionConfigView: View {
     @State private var nightEnd: Int = 6
 
     private let levels: [(name: String, icon: String, description: String)] = [
-        ("Awareness",            "eye",                         "A gentle reminder that you've been scrolling"),
-        ("Breathing",            "wind",                        "Guided breathing exercise before continuing"),
-        ("Intention Check",      "questionmark.circle",         "State why you need this app right now"),
-        ("Reflection",           "heart",                       "Rate how you feel and journal a sentence"),
-        ("Strong Encouragement", "exclamationmark.triangle",    "Multi-step challenge to prove you really need it"),
+        ("Awareness",          "eye",                      "A gentle nudge that you've been scrolling"),
+        ("Breathing Gate",     "wind",                     "6-second forced breath before continuing"),
+        ("Intent Declaration", "questionmark.circle",      "State why you need this app right now"),
+        ("Countdown Unlock",   "timer",                    "Escalating timer that gets longer each time"),
+        ("Scroll Friction",    "arrow.down.to.line",       "Slow-scroll mindful content before re-entry"),
     ]
 
     var body: some View {

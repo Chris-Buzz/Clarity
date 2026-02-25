@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Step 1: Dramatic hero screen showing time lost to phones, with concentric pulsing rings.
+/// Step 0: Dramatic hero screen about patience training, with concentric pulsing rings.
 struct WelcomeStep: View {
 
     let onContinue: () -> Void
@@ -27,30 +27,32 @@ struct WelcomeStep: View {
 
                 // Headline
                 VStack(spacing: ClaritySpacing.xs) {
-                    Text("Your phone stole")
+                    Text("Your brain forgot")
                         .font(ClarityFonts.sans(size: 18))
                         .foregroundStyle(ClarityColors.textSecondary)
 
-                    Text("11 years")
+                    Text("how to wait")
                         .font(ClarityFonts.serif(size: 48, weight: .bold))
                         .foregroundStyle(ClarityColors.primary)
 
-                    Text("from you.")
-                        .font(ClarityFonts.sans(size: 18))
+                    Text("Clarity teaches your brain to be patient again")
+                        .font(ClarityFonts.sans(size: 16))
                         .foregroundStyle(ClarityColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, ClaritySpacing.xs)
                 }
 
                 // Three numbered steps
                 VStack(spacing: ClaritySpacing.sm) {
-                    stepCard(number: "01", text: "Choose your shields")
-                    stepCard(number: "02", text: "Friction, not blocking")
-                    stepCard(number: "03", text: "Build clarity over time")
+                    stepCard(number: "01", text: "Choose apps to train with")
+                    stepCard(number: "02", text: "Friction that builds patience")
+                    stepCard(number: "03", text: "Rewire your dopamine system")
                 }
                 .padding(.horizontal, ClaritySpacing.lg)
 
                 // CTA
                 ClarityButton(
-                    "Take it back",
+                    "Start training",
                     variant: .primary,
                     size: .lg,
                     fullWidth: true

@@ -28,7 +28,7 @@ struct SubscriptionView: View {
                             .font(ClarityFonts.serif(size: 36))
                             .foregroundStyle(ClarityColors.textPrimary)
 
-                        Text("Take back your time")
+                        Text("Train your patience")
                             .font(ClarityFonts.sans(size: 16))
                             .foregroundStyle(ClarityColors.textSecondary)
                     }
@@ -36,11 +36,14 @@ struct SubscriptionView: View {
 
                     // Feature list
                     VStack(alignment: .leading, spacing: ClaritySpacing.md) {
-                        featureRow(icon: "shield.fill", text: "App shielding & progressive friction")
-                        featureRow(icon: "person.2.fill", text: "Prosocial challenges with verification")
-                        featureRow(icon: "wifi", text: "WiFi-gated unlocking")
-                        featureRow(icon: "chart.bar.fill", text: "Insights & connection stats")
-                        featureRow(icon: "lock.fill", text: "100% private — everything on your phone")
+                        featureRow(icon: "timer", text: "Progressive countdown escalation")
+                        featureRow(icon: "arrow.down.to.line", text: "Scroll friction doomscroll breaker")
+                        featureRow(icon: "brain.head.profile", text: "30-day dopamine rewiring program")
+                        featureRow(icon: "target", text: "Daily patience challenges")
+                        featureRow(icon: "cloud", text: "Fog journal with pattern recognition")
+                        featureRow(icon: "calendar", text: "Calendar breathing room")
+                        featureRow(icon: "sparkles", text: "AI thought untangler")
+                        featureRow(icon: "lock.fill", text: "100% private -- everything stays on your phone")
                     }
                     .padding(.horizontal, ClaritySpacing.md)
 

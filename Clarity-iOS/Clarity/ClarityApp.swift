@@ -22,11 +22,10 @@ struct ClarityApp: App {
             ImplementationIntention.self,
             SubstitutionRecord.self,
             Achievement.self,
-            // v2 prosocial + WiFi models
-            ProsocialChallenge.self,
-            ConnectionLog.self,
-            ImportantContact.self,
-            WiFiGateConfig.self,
+            // Patience models
+            FogEntry.self,
+            PatienceChallenge.self,
+            DopamineProgram.self,
         ])
     }
 }

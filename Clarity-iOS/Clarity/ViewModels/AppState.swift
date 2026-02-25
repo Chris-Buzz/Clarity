@@ -7,7 +7,7 @@ import SwiftData
 
 enum Tab: String, CaseIterable {
     case dashboard = "Dashboard"
-    case insights = "Insights"
+    case patience = "Patience"
     case settings = "Settings"
 }
 
@@ -24,12 +24,12 @@ class AppState {
     var isShowingReflection: Bool = false
     var pendingSession: FocusSession?
 
-    // v2 services — singletons injected via environment for view access
-    var prosocialEngine = ProsocialChallengeEngine.shared
-    var wifiGateService = WiFiGateService.shared
+    // Services — singletons injected via environment for view access
     var subscriptionService = SubscriptionService.shared
     var dailyBudgetService = DailyBudgetService.shared
     var focusBlockingService = FocusSessionBlockingService.shared
+    var patienceManager = PatienceManager.shared
+    var countdownManager = CountdownManager.shared
 
     /// Checks SwiftData for an existing user profile and restores onboarding state.
     func checkOnboardingStatus(context: ModelContext) {

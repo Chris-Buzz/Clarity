@@ -21,7 +21,10 @@ class ClarityShieldAction: ShieldActionDelegate {
                 // BLOCKED — shield stays, button does nothing
                 completionHandler(.none)
             } else {
-                // Normal friction — "I Choose to Continue"
+                // Track the bypass for adaptive friction escalation
+                incrementBypassCount()
+                // Also increment countdown opens for escalation
+                incrementCountdownOpens()
                 completionHandler(.close)
             }
         @unknown default:
@@ -41,10 +44,27 @@ class ClarityShieldAction: ShieldActionDelegate {
             if isHardLocked {
                 completionHandler(.none)
             } else {
+                incrementBypassCount()
+                incrementCountdownOpens()
                 completionHandler(.close)
             }
         @unknown default:
             completionHandler(.close)
         }
+    }
+
+    // MARK: - Adaptive Friction
+
+    /// Increment bypass counter in App Group UserDefaults so the main app's
+    /// AdaptiveFrictionEngine can read it back and escalate friction.
+    private func incrementBypassCount() {
+        let current = sharedDefaults?.integer(forKey: "adaptiveFriction.dailyBypassCount") ?? 0
+        sharedDefaults?.set(current + 1, forKey: "adaptiveFriction.dailyBypassCount")
+    }
+
+    /// Increment countdown opens so the next shield shows a longer delay.
+    private func incrementCountdownOpens() {
+        let current = sharedDefaults?.integer(forKey: "countdown.opensToday") ?? 0
+        sharedDefaults?.set(current + 1, forKey: "countdown.opensToday")
     }
 }

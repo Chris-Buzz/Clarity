@@ -40,9 +40,10 @@ if [ ! -f "$FONT_DIR/PlayfairDisplay-Regular.ttf" ]; then
     echo "       Downloading Playfair Display..."
     curl -sL "https://fonts.google.com/download?family=Playfair+Display" -o /tmp/playfair.zip
     unzip -qo /tmp/playfair.zip -d /tmp/playfair
-    cp /tmp/playfair/static/PlayfairDisplay-Regular.ttf "$FONT_DIR/"
-    cp /tmp/playfair/static/PlayfairDisplay-Italic.ttf "$FONT_DIR/"
-    cp /tmp/playfair/static/PlayfairDisplay-SemiBoldItalic.ttf "$FONT_DIR/"
+    # Try static/ subdirectory first, fall back to flat structure
+    cp /tmp/playfair/static/PlayfairDisplay-Regular.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-Regular.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/playfair/static/PlayfairDisplay-Italic.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-Italic.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/playfair/static/PlayfairDisplay-SemiBoldItalic.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-SemiBoldItalic.ttf" -exec cp {} "$FONT_DIR/" \;
     rm -rf /tmp/playfair /tmp/playfair.zip
     echo "       Playfair Display downloaded."
 else
@@ -53,12 +54,13 @@ if [ ! -f "$FONT_DIR/Outfit-Regular.ttf" ]; then
     echo "       Downloading Outfit..."
     curl -sL "https://fonts.google.com/download?family=Outfit" -o /tmp/outfit.zip
     unzip -qo /tmp/outfit.zip -d /tmp/outfit
-    cp /tmp/outfit/static/Outfit-Thin.ttf "$FONT_DIR/"
-    cp /tmp/outfit/static/Outfit-ExtraLight.ttf "$FONT_DIR/"
-    cp /tmp/outfit/static/Outfit-Light.ttf "$FONT_DIR/"
-    cp /tmp/outfit/static/Outfit-Regular.ttf "$FONT_DIR/"
-    cp /tmp/outfit/static/Outfit-Medium.ttf "$FONT_DIR/"
-    cp /tmp/outfit/static/Outfit-SemiBold.ttf "$FONT_DIR/"
+    # Try static/ subdirectory first, fall back to flat structure
+    cp /tmp/outfit/static/Outfit-Thin.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Thin.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/outfit/static/Outfit-ExtraLight.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-ExtraLight.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/outfit/static/Outfit-Light.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Light.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/outfit/static/Outfit-Regular.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Regular.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/outfit/static/Outfit-Medium.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Medium.ttf" -exec cp {} "$FONT_DIR/" \;
+    cp /tmp/outfit/static/Outfit-SemiBold.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-SemiBold.ttf" -exec cp {} "$FONT_DIR/" \;
     rm -rf /tmp/outfit /tmp/outfit.zip
     echo "       Outfit downloaded."
 else

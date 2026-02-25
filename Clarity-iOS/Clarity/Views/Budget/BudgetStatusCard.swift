@@ -120,7 +120,7 @@ struct BudgetStatusCard: View {
             .sheet(isPresented: $showEmergencyUnlock) {
                 EmergencyUnlockView(
                     budgetService: budgetService,
-                    waitMinutes: profile?.emergencyWaitMinutes ?? 5,
+                    waitMinutes: AdaptiveFrictionEngine.shared.currentEmergencyWaitMinutes,
                     remainingUnlocks: budgetService.remainingUnlocks,
                     minutesUsedToday: minutesUsedToday,
                     budgetMinutes: budgetMinutes

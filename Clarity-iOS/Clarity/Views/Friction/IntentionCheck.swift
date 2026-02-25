@@ -1,17 +1,17 @@
 import SwiftUI
 
-/// Layer 3 friction (30 min). Asks the user to articulate what they are
-/// hoping to find, requiring at least 10 characters before they can proceed.
+/// Layer 3 friction (30 min). Asks the user to declare their intent for opening the app,
+/// requiring at least 10 characters before they can proceed.
 struct IntentionCheck: View {
 
     let onComplete: () -> Void
     let onCancel: () -> Void
 
-    /// Optional implementation intention to remind the user of (e.g. from settings).
-    var implementationIntention: String? = nil
-
     @State private var response: String = ""
+    @State private var showBrowsingPrompt = false
     @FocusState private var isFocused: Bool
+
+    private let presetIntents = ["Messaging someone", "Checking something specific", "Just browsing", "Work related"]
 
     private var canContinue: Bool {
         response.trimmingCharacters(in: .whitespacesAndNewlines).count >= 10
@@ -20,7 +20,7 @@ struct IntentionCheck: View {
     var body: some View {
         VStack(spacing: ClaritySpacing.lg) {
             // Header
-            Text("INTENTION CHECK")
+            Text("INTENT DECLARATION")
                 .font(ClarityFonts.mono(size: 10))
                 .tracking(3)
                 .foregroundStyle(ClarityColors.textMuted)
@@ -31,10 +31,52 @@ struct IntentionCheck: View {
                 .foregroundStyle(ClarityColors.primary)
                 .symbolEffect(.pulse, options: .repeating)
 
-            Text("What are you hoping to find?")
+            Text("What are you opening this for?")
                 .font(ClarityFonts.serif(size: 26, weight: .bold))
                 .foregroundStyle(ClarityColors.textPrimary)
                 .multilineTextAlignment(.center)
+
+            // Preset intent chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ClaritySpacing.sm) {
+                    ForEach(presetIntents, id: \.self) { intent in
+                        Button {
+                            HapticManager.light()
+                            response = intent
+                            if intent == "Just browsing" {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    showBrowsingPrompt = true
+                                }
+                            } else {
+                                showBrowsingPrompt = false
+                            }
+                        } label: {
+                            Text(intent)
+                                .font(ClarityFonts.sans(size: 13))
+                                .foregroundStyle(response == intent ? .white : .white.opacity(0.6))
+                                .padding(.horizontal, ClaritySpacing.md)
+                                .padding(.vertical, ClaritySpacing.sm)
+                                .background(response == intent ? ClarityColors.primaryMuted : ClarityColors.surface)
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(
+                                            response == intent ? ClarityColors.primary.opacity(0.5) : ClarityColors.borderSubtle,
+                                            lineWidth: 1
+                                        )
+                                )
+                        }
+                    }
+                }
+            }
+
+            // Browsing prompt
+            if showBrowsingPrompt {
+                Text("Consider doing something analog instead.")
+                    .font(ClarityFonts.sans(size: 14))
+                    .foregroundStyle(ClarityColors.teal)
+                    .transition(.opacity)
+            }
 
             // Text input
             TextEditor(text: $response)
@@ -51,23 +93,6 @@ struct IntentionCheck: View {
                 )
                 .focused($isFocused)
 
-            // Implementation intention reminder
-            if let intention = implementationIntention, !intention.isEmpty {
-                HStack(spacing: ClaritySpacing.sm) {
-                    Image(systemName: "lightbulb")
-                        .foregroundStyle(ClarityColors.primary)
-                        .font(.system(size: 14))
-
-                    Text("Remember: \(intention)")
-                        .font(ClarityFonts.sans(size: 13))
-                        .foregroundStyle(ClarityColors.textSecondary)
-                }
-                .padding(ClaritySpacing.sm)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(ClarityColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: ClarityRadius.md))
-            }
-
             // Continue
             ClarityButton("Continue", variant: .primary, fullWidth: true) {
                 onComplete()
@@ -80,7 +105,7 @@ struct IntentionCheck: View {
                 HapticManager.light()
                 onCancel()
             } label: {
-                Text("Go back to what I was doing")
+                Text("I choose to skip this")
                     .font(ClarityFonts.sans(size: 14))
                     .foregroundStyle(ClarityColors.textMuted)
             }
@@ -91,11 +116,7 @@ struct IntentionCheck: View {
 #Preview {
     ZStack {
         ClarityColors.background.ignoresSafeArea()
-        IntentionCheck(
-            onComplete: {},
-            onCancel: {},
-            implementationIntention: "If I feel bored -> read a book instead"
-        )
-        .padding()
+        IntentionCheck(onComplete: {}, onCancel: {})
+            .padding()
     }
 }

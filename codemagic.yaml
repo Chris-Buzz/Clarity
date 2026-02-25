@@ -1,0 +1,98 @@
+workflows:
+
+  # ============================================
+  # Clarity iOS — Build & Deploy to TestFlight
+  # ============================================
+  clarity-ios:
+    name: Clarity iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: Clarity App Store Connect
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier:
+          - com.clarity-focus
+          - com.clarity-focus.ShieldConfiguration
+          - com.clarity-focus.ShieldAction
+          - com.clarity-focus.DeviceActivityMonitor
+          - com.clarity-focus.DeviceActivityReport
+          - com.clarity-focus.Widget
+      vars:
+        XCODE_WORKSPACE: "Clarity-iOS/Clarity.xcodeproj"
+        XCODE_SCHEME: "Clarity"
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      # Step 1: Install XcodeGen
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      # Step 2: Run setup (download fonts + generate xcodeproj)
+      - name: Run setup
+        script: |
+          cd Clarity-iOS
+          chmod +x setup.sh
+          ./setup.sh
+
+      # Step 3: Set up code signing
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "com.clarity-focus" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "com.clarity-focus.ShieldConfiguration" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "com.clarity-focus.ShieldAction" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityMonitor" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE
+          app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE
+          keychain add-certificates
+          xcode-project use-profiles
+
+      # Step 4: Build
+      - name: Build
+        script: |
+          cd Clarity-iOS
+          xcodebuild build -project Clarity.xcodeproj \
+            -scheme Clarity \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            clean build
+
+      # Step 5: Package IPA
+      - name: Package IPA
+        script: |
+          cd Clarity-iOS
+          xcodebuild archive -project Clarity.xcodeproj \
+            -scheme Clarity \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath build/Clarity.xcarchive \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
+
+          xcodebuild -exportArchive \
+            -archivePath build/Clarity.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath build/ipa
+
+    artifacts:
+      - Clarity-iOS/build/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Clarity Testers

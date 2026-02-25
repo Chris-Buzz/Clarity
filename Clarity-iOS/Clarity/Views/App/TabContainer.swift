@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Custom tab bar with text-only labels and a sliding orange indicator.
 /// Deliberately avoids system TabView for a distinctive, minimal aesthetic.
+/// Tabs: Dashboard | Patience | Settings
 struct TabContainer: View {
 
     @Environment(AppState.self) private var appState
@@ -17,10 +18,10 @@ struct TabContainer: View {
                 switch appState.selectedTab {
                 case .dashboard:
                     DashboardView()
-                case .insights:
-                    InsightsPlaceholderView()
+                case .patience:
+                    PatienceDashboardTab()
                 case .settings:
-                    SettingsPlaceholderView()
+                    SettingsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -90,34 +91,14 @@ struct TabContainer: View {
     }
 }
 
-// MARK: - Placeholder Tabs
-
-/// Placeholder for Insights tab — replace with real implementation.
-private struct InsightsPlaceholderView: View {
-    var body: some View {
-        ZStack {
-            ClarityColors.background.ignoresSafeArea()
-            Text("Insights")
-                .font(ClarityFonts.serif(size: 28))
-                .foregroundStyle(ClarityColors.textMuted)
-        }
-    }
-}
-
-/// Placeholder for Settings tab — replace with real implementation.
-private struct SettingsPlaceholderView: View {
-    var body: some View {
-        ZStack {
-            ClarityColors.background.ignoresSafeArea()
-            Text("Settings")
-                .font(ClarityFonts.serif(size: 28))
-                .foregroundStyle(ClarityColors.textMuted)
-        }
-    }
-}
-
 #Preview {
     TabContainer()
         .environment(AppState())
-        .modelContainer(for: [UserProfile.self, FocusSession.self], inMemory: true)
+        .modelContainer(for: [
+            UserProfile.self,
+            FocusSession.self,
+            PatienceChallenge.self,
+            DopamineProgram.self,
+            FogEntry.self,
+        ], inMemory: true)
 }

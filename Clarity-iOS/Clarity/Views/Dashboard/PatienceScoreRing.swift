@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Animated circular score indicator with an orange gradient arc.
-/// Displays the clarity score (0-100) with a delta comparison.
-struct ClarityScoreRing: View {
+/// Animated circular score indicator with an orange-teal gradient arc.
+/// Displays the patience score (0-100) with a delta comparison.
+struct PatienceScoreRing: View {
 
     let score: Double
     let delta: Double
@@ -19,12 +19,12 @@ struct ClarityScoreRing: View {
                 .stroke(ClarityColors.borderSubtle, lineWidth: ringWidth)
                 .frame(width: ringSize, height: ringSize)
 
-            // Filled arc — orange gradient
+            // Filled arc — orange-teal gradient
             Circle()
                 .trim(from: 0, to: animatedTrim)
                 .stroke(
                     AngularGradient(
-                        colors: [ClarityColors.primary, ClarityColors.warning, ClarityColors.primary],
+                        colors: [ClarityColors.primary, ClarityColors.teal, ClarityColors.primary],
                         center: .center,
                         startAngle: .degrees(0),
                         endAngle: .degrees(360)
@@ -39,10 +39,9 @@ struct ClarityScoreRing: View {
                 Text("\(Int(score))")
                     .font(ClarityFonts.serif(size: 56))
                     .foregroundStyle(ClarityColors.textPrimary)
-                    // Use a fixed-width frame so the number doesn't shift layout
                     .monospacedDigit()
 
-                Text("CLARITY SCORE")
+                Text("PATIENCE SCORE")
                     .font(ClarityFonts.mono(size: 9))
                     .tracking(3)
                     .foregroundStyle(ClarityColors.textMuted)
@@ -77,6 +76,6 @@ struct ClarityScoreRing: View {
 #Preview {
     ZStack {
         ClarityColors.background.ignoresSafeArea()
-        ClarityScoreRing(score: 73, delta: 8)
+        PatienceScoreRing(score: 73, delta: 8)
     }
 }

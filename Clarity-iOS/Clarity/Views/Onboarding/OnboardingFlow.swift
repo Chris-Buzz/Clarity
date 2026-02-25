@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 9-step onboarding coordinator with animated progress bar and page transitions.
+/// 7-step onboarding coordinator with animated progress bar and page transitions.
 struct OnboardingFlow: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -11,7 +11,7 @@ struct OnboardingFlow: View {
     @State private var currentStep: Int = 0
 
     /// Total number of onboarding steps
-    private let totalSteps = 9
+    private let totalSteps = 7
 
     var body: some View {
         ZStack {
@@ -107,14 +107,10 @@ struct OnboardingFlow: View {
         case 3:
             AppSelectionStep { advanceStep() }
         case 4:
-            ImportantPeopleStep { advanceStep() }
-        case 5:
-            HomeBaseStep { advanceStep() }
-        case 6:
             GoalSettingStep { advanceStep() }
-        case 7:
-            IntentionBuilderStep { advanceStep() }
-        case 8:
+        case 5:
+            PatienceBaselineStep { advanceStep() }
+        case 6:
             ReadyStep { completeOnboarding() }
         default:
             EmptyView()
@@ -140,5 +136,5 @@ struct OnboardingFlow: View {
 
 #Preview {
     OnboardingFlow()
-        .modelContainer(for: [UserProfile.self, ImplementationIntention.self, ImportantContact.self, WiFiGateConfig.self], inMemory: true)
+        .modelContainer(for: [UserProfile.self], inMemory: true)
 }

@@ -88,9 +88,25 @@ class ClarityShieldConfiguration: ShieldConfigurationDataSource {
 
     // MARK: - Progressive Friction Shield
 
-    /// Standard friction shield with functional "I Choose to Continue"
+    /// Patience-based friction shield with functional "I Choose to Continue".
+    /// Reads adaptive friction state to escalate messaging and color when
+    /// the user has been bypassing repeatedly or doomscrolling.
     private func frictionConfig() -> ShieldConfiguration {
         let level = sharedDefaults?.integer(forKey: "currentFrictionLevel") ?? 1
+        let intensityRaw = sharedDefaults?.integer(forKey: "adaptiveFriction.intensityRaw") ?? 0
+        let bypassCount = sharedDefaults?.integer(forKey: "adaptiveFriction.dailyBypassCount") ?? 0
+        let isEscalated = intensityRaw >= 2 // high or extreme
+
+        let titleColor = isEscalated ? redColor : orangeColor
+        let buttonBgColor = isEscalated ? redColor : orangeColor
+
+        let subtitle = isEscalated
+            ? escalatedSubtitle(level: level, bypasses: bypassCount)
+            : subtitleForLevel(level)
+
+        let secondaryText = bypassCount > 0
+            ? "Continue (\(bypassCount) bypass\(bypassCount == 1 ? "" : "es") today)"
+            : "I Choose to Continue"
 
         return ShieldConfiguration(
             backgroundBlurStyle: .systemUltraThinMaterialDark,
@@ -98,45 +114,59 @@ class ClarityShieldConfiguration: ShieldConfigurationDataSource {
             icon: nil,
             title: ShieldConfiguration.Label(
                 text: titleForLevel(level),
-                color: orangeColor
+                color: titleColor
             ),
             subtitle: ShieldConfiguration.Label(
-                text: subtitleForLevel(level),
+                text: subtitle,
                 color: UIColor.white.withAlphaComponent(0.6)
             ),
             primaryButtonLabel: ShieldConfiguration.Label(
                 text: "Open Clarity",
                 color: .white
             ),
-            primaryButtonBackgroundColor: orangeColor,
+            primaryButtonBackgroundColor: buttonBgColor,
             secondaryButtonLabel: ShieldConfiguration.Label(
-                text: "I Choose to Continue",
+                text: secondaryText,
                 color: UIColor.white.withAlphaComponent(0.4)
             )
         )
     }
 
+    /// More assertive subtitle when friction intensity is high or extreme
+    private func escalatedSubtitle(level: Int, bypasses: Int) -> String {
+        if bypasses >= 3 {
+            return "You've bypassed friction \(bypasses) times today. Is this really what you want?"
+        }
+        switch level {
+        case 1: return "You keep coming back. Is this intentional?"
+        case 2: return "Rapid pickups detected. Breathe before continuing."
+        case 3: return "Thresholds shortened because of your pattern."
+        case 4: return "This is bypass #\(bypasses). Your patience is being tested."
+        case 5: return "Friction is at maximum. Think carefully."
+        default: return "Your usage pattern triggered heightened friction."
+        }
+    }
+
     private func titleForLevel(_ level: Int) -> String {
-        let prosocialEnabled = sharedDefaults?.bool(forKey: "prosocialEnabled") ?? true
         switch level {
         case 1: return "Take a breath"
-        case 2: return prosocialEnabled ? "Someone would love to hear from you" : "Pause and breathe"
-        case 3: return "What are you looking for?"
-        case 4: return prosocialEnabled ? "Call someone who matters" : "Check in with yourself"
-        case 5: return "Are you sure about this?"
+        case 2: return "Breathing gate"
+        case 3: return "What are you opening this for?"
+        case 4: return "Wait for it..."
+        case 5: return "Scroll with intention"
         default: return "Take a breath"
         }
     }
 
     private func subtitleForLevel(_ level: Int) -> String {
-        let prosocialEnabled = sharedDefaults?.bool(forKey: "prosocialEnabled") ?? true
+        let opensToday = sharedDefaults?.integer(forKey: "countdown.opensToday") ?? 0
         switch level {
-        case 1: return "Is this intentional?"
-        case 2: return prosocialEnabled ? "Send a quick text instead of scrolling" : "30 seconds of breathing can change your mind"
-        case 3: return "Name what you're seeking — clarity starts here"
-        case 4: return prosocialEnabled ? "A real conversation beats any feed" : "How are you really feeling right now?"
-        case 5: return "You've spent significant time here today"
-        default: return "Be intentional with your time"
+        case 1: return "You've been scrolling for a while."
+        case 2: return "Breathe before you continue."
+        case 3: return "Declare your intent."
+        case 4: return "Open #\(opensToday + 1) today. Your patience is growing."
+        case 5: return "Slow down. Read through before continuing."
+        default: return "Be intentional with your time."
         }
     }
 }

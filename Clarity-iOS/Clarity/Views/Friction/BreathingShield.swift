@@ -1,30 +1,30 @@
 import SwiftUI
 
-/// Layer 2 friction (15 min). Guides the user through one 4-4-4 breathing cycle
-/// before allowing them to continue.
+/// Layer 2 friction (15 min). Guides the user through a 6-second breathing cycle
+/// (2s inhale, 2s hold, 2s exhale) before allowing them to continue.
 struct BreathingShield: View {
 
     let onComplete: () -> Void
     let onCancel: () -> Void
 
-    // Each phase is 4 seconds; one full cycle = 12s
-    private let phaseDuration: Double = 4.0
+    // Each phase is 2 seconds; one full cycle = 6s
+    private let phaseDuration: Double = 2.0
 
     @State private var phase: BreathPhase = .inhale
     @State private var cycleComplete = false
-    @State private var countdown: Int = 4
+    @State private var countdown: Int = 2
     @State private var circleScale: CGFloat = 0.6
 
     private enum BreathPhase: String {
-        case inhale = "BREATHE IN"
-        case hold   = "HOLD"
-        case exhale = "BREATHE OUT"
+        case inhale = "Breathe in..."
+        case hold   = "Hold..."
+        case exhale = "Release..."
     }
 
     var body: some View {
         VStack(spacing: ClaritySpacing.lg) {
             // Header
-            Text("PAUSE AND BREATHE")
+            Text("BREATHING GATE")
                 .font(ClarityFonts.mono(size: 10))
                 .tracking(3)
                 .foregroundStyle(ClarityColors.textMuted)
@@ -69,7 +69,7 @@ struct BreathingShield: View {
                 HapticManager.light()
                 onCancel()
             } label: {
-                Text("Go back to what I was doing")
+                Text("I choose to skip this")
                     .font(ClarityFonts.sans(size: 14))
                     .foregroundStyle(ClarityColors.textMuted)
             }
@@ -82,26 +82,26 @@ struct BreathingShield: View {
     // MARK: - Breathing Cycle
 
     private func startCycle() {
-        // Phase 1: Inhale (expand over 4s)
+        // Phase 1: Inhale (expand over 2s)
         phase = .inhale
-        countdown = 4
+        countdown = 2
         startCountdown()
 
         withAnimation(.easeInOut(duration: phaseDuration)) {
             circleScale = 1.0
         }
 
-        // Phase 2: Hold at 4s
+        // Phase 2: Hold at 2s
         DispatchQueue.main.asyncAfter(deadline: .now() + phaseDuration) {
             phase = .hold
-            countdown = 4
+            countdown = 2
             startCountdown()
         }
 
-        // Phase 3: Exhale at 8s (contract over 4s)
+        // Phase 3: Exhale at 4s (contract over 2s)
         DispatchQueue.main.asyncAfter(deadline: .now() + phaseDuration * 2) {
             phase = .exhale
-            countdown = 4
+            countdown = 2
             startCountdown()
 
             withAnimation(.easeInOut(duration: phaseDuration)) {
@@ -109,7 +109,7 @@ struct BreathingShield: View {
             }
         }
 
-        // Cycle complete at 12s
+        // Cycle complete at 6s
         DispatchQueue.main.asyncAfter(deadline: .now() + phaseDuration * 3) {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 cycleComplete = true
@@ -119,10 +119,9 @@ struct BreathingShield: View {
     }
 
     private func startCountdown() {
-        for i in 1..<4 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i)) {
-                countdown = 4 - i
-            }
+        // Count from 2 to 1 (for a 2-second phase)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            countdown = 1
         }
     }
 }

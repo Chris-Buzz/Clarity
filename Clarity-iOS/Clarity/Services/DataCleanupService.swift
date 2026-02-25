@@ -3,18 +3,19 @@ import SwiftData
 import Foundation
 
 class DataCleanupService {
+    static let shared = DataCleanupService()
     static let taskIdentifier = "com.clarity-focus.dataCleanup"
 
     /// Register the background task in ClarityApp.init
-    static func registerBackgroundTask() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: taskIdentifier, using: nil) { task in
-            handleCleanup(task: task as! BGAppRefreshTask)
+    func registerBackgroundTask() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: nil) { task in
+            Self.handleCleanup(task: task as! BGAppRefreshTask)
         }
     }
 
     /// Schedule the next cleanup (daily)
-    static func scheduleCleanup() {
-        let request = BGAppRefreshTaskRequest(identifier: taskIdentifier)
+    func scheduleCleanup() {
+        let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         request.earliestBeginDate = Calendar.current.date(byAdding: .hour, value: 24, to: Date())
         try? BGTaskScheduler.shared.submit(request)
     }
@@ -22,14 +23,13 @@ class DataCleanupService {
     /// Perform the cleanup
     static func handleCleanup(task: BGAppRefreshTask) {
         let container = try! ModelContainer(for:
-            FocusSession.self, MoodEntry.self, ProsocialChallenge.self,
-            ConnectionLog.self, DailySnapshot.self
+            FocusSession.self, MoodEntry.self, DailySnapshot.self
         )
         let context = ModelContext(container)
 
         performCleanup(context: context)
 
-        scheduleCleanup()
+        DataCleanupService.shared.scheduleCleanup()
         task.setTaskCompleted(success: true)
     }
 
@@ -45,8 +45,6 @@ class DataCleanupService {
         // 30-day cleanup
         try? context.delete(model: FocusSession.self, where: #Predicate { $0.startTime < thirtyDaysAgo })
         try? context.delete(model: MoodEntry.self, where: #Predicate { $0.timestamp < thirtyDaysAgo })
-        try? context.delete(model: ProsocialChallenge.self, where: #Predicate { $0.issuedAt < thirtyDaysAgo })
-        try? context.delete(model: ConnectionLog.self, where: #Predicate { $0.timestamp < thirtyDaysAgo })
 
         // 90-day cleanup for snapshots
         try? context.delete(model: DailySnapshot.self, where: #Predicate { $0.date < ninetyDaysAgo })

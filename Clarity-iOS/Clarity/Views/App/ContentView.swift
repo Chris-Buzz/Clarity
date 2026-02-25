@@ -7,6 +7,7 @@ import SwiftData
 struct ContentView: View {
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State var appState = AppState()
     @State private var sessionManager = SessionManager()
     @State private var gamificationManager = GamificationManager()
@@ -27,14 +28,34 @@ struct ContentView: View {
         .onAppear {
             appState.checkOnboardingStatus(context: modelContext)
 
-            // v2 service initialization
-            WiFiGateService.shared.startMonitoring()
+            // Service initialization
             Task { await SubscriptionService.shared.loadProducts() }
             DataCleanupService.shared.scheduleCleanup()
 
             // Daily budget: reset counters at midnight + check for lock state
             DailyBudgetService.shared.resetDaily()
             DailyBudgetService.shared.checkAndApplyLock()
+
+            // Adaptive friction: reset daily counters
+            AdaptiveFrictionEngine.shared.resetDaily()
+
+            // Patience systems: daily reset
+            CountdownManager.shared.resetDaily()
+            PatienceManager.shared.resetDaily()
+
+            // Claude API: reset daily usage
+            ClaudeAPIService.shared.resetDaily()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                AdaptiveFrictionEngine.shared.recordAppOpen()
+                AdaptiveFrictionEngine.shared.syncFromExtensions()
+            case .background:
+                AdaptiveFrictionEngine.shared.recordAppClose()
+            default:
+                break
+            }
         }
         // Active focus session — presented over everything
         .fullScreenCover(isPresented: $appState.isShowingFocusTimer) {

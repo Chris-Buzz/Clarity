@@ -34,4 +34,19 @@ enum ClarityColors {
     // MARK: - Overlays
     static let overlay          = Color.black.opacity(0.8)
     static let overlayHeavy     = Color.black.opacity(0.95)
+
+    // MARK: - Secondary (Teal - Patience/Clarity)
+    static let teal           = Color(hex: "#14b8a6")
+    static let tealMuted      = Color(hex: "#14b8a6").opacity(0.15)
+    static let tealGlow       = Color(hex: "#14b8a6").opacity(0.3)
+
+    // MARK: - Patience Gradient
+    static let patienceGradientStart = Color(hex: "#0a1628")
+    static let patienceGradientEnd   = Color(hex: "#0d3d38")
+
+    // MARK: - Fog Scale (1=heavy fog, 5=crystal clear)
+    static let fogHeavy    = Color.white.opacity(0.3)
+    static let fogMild     = Color.white.opacity(0.5)
+    static let fogClearing = Color(hex: "#14b8a6").opacity(0.5)
+    static let fogClear    = Color(hex: "#14b8a6")
 }

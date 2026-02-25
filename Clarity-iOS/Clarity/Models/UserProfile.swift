@@ -44,6 +44,13 @@ class UserProfile {
     // Focus Session Blocking
     var focusSessionBlockingEnabled: Bool = false
 
+    // Patience Training
+    var patienceLevel: Int = 1
+    var challengeStreak: Int = 0
+    var dopamineProgramDay: Int = 0
+    var countdownEscalationBase: Int = 5
+    var patienceBaselineScore: Int = 5
+
     init(name: String) {
         self.id = UUID()
         self.name = name
