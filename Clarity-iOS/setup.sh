@@ -12,50 +12,33 @@ cd "$(dirname "$0")"
 # Step 1: Check for Xcode
 if ! command -v xcodebuild &> /dev/null; then
     echo "ERROR: Xcode is not installed."
-    echo "Install it from the Mac App Store first."
     exit 1
 fi
 
 echo "[1/5] Checking for XcodeGen..."
-
-# Step 2: Install XcodeGen if needed
 if ! command -v xcodegen &> /dev/null; then
-    echo "       XcodeGen not found. Installing via Homebrew..."
-    if ! command -v brew &> /dev/null; then
-        echo "ERROR: Homebrew is not installed."
-        exit 1
-    fi
     brew install xcodegen
 else
     echo "       XcodeGen found."
 fi
 
-# Step 3: Download fonts (non-fatal)
+# Step 2: Download fonts (non-fatal)
 echo "[2/5] Checking fonts..."
 FONT_DIR="Clarity/Fonts"
 mkdir -p "$FONT_DIR"
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Regular.ttf" -o "$FONT_DIR/SpaceMono-Regular.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Regular.ttf" -o "$FONT_DIR/Outfit-Regular.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Medium.ttf" -o "$FONT_DIR/Outfit-Medium.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-SemiBold.ttf" -o "$FONT_DIR/Outfit-SemiBold.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Light.ttf" -o "$FONT_DIR/Outfit-Light.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Regular.ttf" -o "$FONT_DIR/PlayfairDisplay-Regular.ttf" 2>/dev/null || true
+echo "       Done"
 
-download_font_file() {
-    local name="$1"
-    local url="$2"
-    [ -f "$FONT_DIR/$name" ] && return 0
-    curl --max-time 15 -fsSL "$url" -o "$FONT_DIR/$name" 2>/dev/null || rm -f "$FONT_DIR/$name"
-}
-
-download_font_file "SpaceMono-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Regular.ttf"
-download_font_file "PlayfairDisplay-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Regular.ttf"
-download_font_file "Outfit-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Regular.ttf"
-download_font_file "Outfit-Medium.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Medium.ttf"
-download_font_file "Outfit-SemiBold.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-SemiBold.ttf"
-download_font_file "Outfit-Light.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Light.ttf"
-
-FONT_COUNT=$(find "$FONT_DIR" -name "*.ttf" 2>/dev/null | wc -l | tr -d ' ')
-echo "       $FONT_COUNT font files ready"
-
-# Step 4: Generate extension entitlements
+# Step 3: Generate extension entitlements
 echo "[3/5] Generating entitlements..."
-
-FAMILY_ENT='<?xml version="1.0" encoding="UTF-8"?>
+for ext in ShieldConfiguration ShieldAction DeviceActivityMonitor DeviceActivityReport; do
+cat > "Clarity/Extensions/$ext/$ext.entitlements" << 'ENTEOF'
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -66,9 +49,12 @@ FAMILY_ENT='<?xml version="1.0" encoding="UTF-8"?>
     <key>com.apple.developer.family-controls</key>
     <true/>
 </dict>
-</plist>'
+</plist>
+ENTEOF
+done
 
-GROUP_ENT='<?xml version="1.0" encoding="UTF-8"?>
+cat > "Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements" << 'ENTEOF'
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -77,23 +63,139 @@ GROUP_ENT='<?xml version="1.0" encoding="UTF-8"?>
         <string>group.com.clarity-focus</string>
     </array>
 </dict>
-</plist>'
+</plist>
+ENTEOF
+echo "       Done"
 
-for ext in ShieldConfiguration ShieldAction DeviceActivityMonitor DeviceActivityReport; do
-    echo "$FAMILY_ENT" > "Clarity/Extensions/$ext/$ext.entitlements"
-done
-echo "$GROUP_ENT" > "Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements"
-echo "       5 entitlements files created"
-
-# Step 5: Generate Xcode project
+# Step 4: Generate clean project.yml (avoids Windows CRLF issues)
 echo "[4/5] Generating Xcode project..."
-# Strip Windows CRLF
-sed -i '' 's/\r$//' project.yml 2>/dev/null || true
+cat > project.yml << 'YMLEOF'
+name: Clarity
+options:
+  bundleIdPrefix: com.clarity-focus
+  deploymentTarget:
+    iOS: "17.0"
+  generateEmptyDirectories: false
+  groupSortPosition: top
+
+settings:
+  base:
+    INFOPLIST_FILE: Clarity/Info.plist
+    CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
+    SUPPORTED_INTERFACE_ORIENTATIONS: UIInterfaceOrientationPortrait
+    SWIFT_VERSION: "5.9"
+
+targets:
+
+  Clarity:
+    type: application
+    platform: iOS
+    sources:
+      - path: Clarity
+        excludes:
+          - "Extensions/**"
+          - "Fonts/**"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus
+        INFOPLIST_FILE: Clarity/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    dependencies:
+      - target: ClarityShieldConfiguration
+      - target: ClarityShieldAction
+      - target: ClarityDeviceActivityMonitor
+      - target: ClarityDeviceActivityReport
+      - target: ClarityWidget
+
+  ClarityShieldConfiguration:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ShieldConfiguration
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldConfiguration
+        CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    info:
+      properties:
+        CFBundleDisplayName: ClarityShieldConfiguration
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldConfiguration
+
+  ClarityShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ShieldAction
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldAction
+        CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    info:
+      properties:
+        CFBundleDisplayName: ClarityShieldAction
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettings.shield-action
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldAction
+
+  ClarityDeviceActivityMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/DeviceActivityMonitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityMonitor
+        CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    info:
+      properties:
+        CFBundleDisplayName: ClarityDeviceActivityMonitor
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.DeviceActivity.monitor
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityMonitorExtension
+
+  ClarityDeviceActivityReport:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/DeviceActivityReport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityReport
+        CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    info:
+      properties:
+        CFBundleDisplayName: ClarityDeviceActivityReport
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.DeviceActivity.report
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityDeviceActivityReport
+
+  ClarityWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Clarity/Extensions/ClarityWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.Widget
+        CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    info:
+      properties:
+        CFBundleDisplayName: ClarityWidget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+YMLEOF
+
 xcodegen generate
 
 echo "[5/5] Done!"
-echo ""
 echo "==================================="
 echo "  Project generated successfully!"
 echo "==================================="
-echo ""
