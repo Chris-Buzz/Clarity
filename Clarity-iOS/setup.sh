@@ -31,52 +31,36 @@ else
     echo "       XcodeGen found."
 fi
 
-# Step 3: Download fonts if not present
+# Step 3: Download fonts if not present (non-fatal — fonts are optional)
 echo "[2/4] Checking fonts..."
 FONT_DIR="Clarity/Fonts"
 mkdir -p "$FONT_DIR"
 
-if [ ! -f "$FONT_DIR/PlayfairDisplay-Regular.ttf" ]; then
-    echo "       Downloading Playfair Display..."
-    curl -sL "https://fonts.google.com/download?family=Playfair+Display" -o /tmp/playfair.zip
-    unzip -qo /tmp/playfair.zip -d /tmp/playfair
-    # Try static/ subdirectory first, fall back to flat structure
-    cp /tmp/playfair/static/PlayfairDisplay-Regular.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-Regular.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/playfair/static/PlayfairDisplay-Italic.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-Italic.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/playfair/static/PlayfairDisplay-SemiBoldItalic.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/playfair -name "PlayfairDisplay-SemiBoldItalic.ttf" -exec cp {} "$FONT_DIR/" \;
-    rm -rf /tmp/playfair /tmp/playfair.zip
-    echo "       Playfair Display downloaded."
-else
-    echo "       Playfair Display already present."
-fi
+download_font() {
+    local family="$1"
+    local url="$2"
+    local dir="$3"
+    local check_file="$4"
 
-if [ ! -f "$FONT_DIR/Outfit-Regular.ttf" ]; then
-    echo "       Downloading Outfit..."
-    curl -sL "https://fonts.google.com/download?family=Outfit" -o /tmp/outfit.zip
-    unzip -qo /tmp/outfit.zip -d /tmp/outfit
-    # Try static/ subdirectory first, fall back to flat structure
-    cp /tmp/outfit/static/Outfit-Thin.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Thin.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/outfit/static/Outfit-ExtraLight.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-ExtraLight.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/outfit/static/Outfit-Light.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Light.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/outfit/static/Outfit-Regular.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Regular.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/outfit/static/Outfit-Medium.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-Medium.ttf" -exec cp {} "$FONT_DIR/" \;
-    cp /tmp/outfit/static/Outfit-SemiBold.ttf "$FONT_DIR/" 2>/dev/null || find /tmp/outfit -name "Outfit-SemiBold.ttf" -exec cp {} "$FONT_DIR/" \;
-    rm -rf /tmp/outfit /tmp/outfit.zip
-    echo "       Outfit downloaded."
-else
-    echo "       Outfit already present."
-fi
+    if [ -f "$FONT_DIR/$check_file" ]; then
+        echo "       $family already present."
+        return 0
+    fi
 
-if [ ! -f "$FONT_DIR/SpaceMono-Regular.ttf" ]; then
-    echo "       Downloading Space Mono..."
-    curl -sL "https://fonts.google.com/download?family=Space+Mono" -o /tmp/spacemono.zip
-    unzip -qo /tmp/spacemono.zip -d /tmp/spacemono
-    cp /tmp/spacemono/static/SpaceMono-Regular.ttf "$FONT_DIR/" 2>/dev/null || cp /tmp/spacemono/SpaceMono-Regular.ttf "$FONT_DIR/"
-    rm -rf /tmp/spacemono /tmp/spacemono.zip
-    echo "       Space Mono downloaded."
-else
-    echo "       Space Mono already present."
-fi
+    echo "       Downloading $family..."
+    if curl --max-time 30 -sL "$url" -o "/tmp/$dir.zip" 2>/dev/null; then
+        unzip -qo "/tmp/$dir.zip" -d "/tmp/$dir" 2>/dev/null || true
+        find "/tmp/$dir" -name "*.ttf" -exec cp {} "$FONT_DIR/" \; 2>/dev/null || true
+        rm -rf "/tmp/$dir" "/tmp/$dir.zip"
+        echo "       $family downloaded."
+    else
+        echo "       WARNING: Could not download $family (skipping — app will use system fonts)"
+    fi
+}
+
+download_font "Playfair Display" "https://fonts.google.com/download?family=Playfair+Display" "playfair" "PlayfairDisplay-Regular.ttf"
+download_font "Outfit" "https://fonts.google.com/download?family=Outfit" "outfit" "Outfit-Regular.ttf"
+download_font "Space Mono" "https://fonts.google.com/download?family=Space+Mono" "spacemono" "SpaceMono-Regular.ttf"
 
 # Step 4: Generate Xcode project
 echo "[3/4] Generating Xcode project..."
