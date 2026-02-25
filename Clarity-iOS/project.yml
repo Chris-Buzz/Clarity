@@ -15,9 +15,6 @@ settings:
 
 targets:
 
-  # ============================================
-  # MAIN APP
-  # ============================================
   Clarity:
     type: application
     platform: iOS
@@ -39,9 +36,6 @@ targets:
       - target: ClarityDeviceActivityReport
       - target: ClarityWidget
 
-  # ============================================
-  # SHIELD CONFIGURATION EXTENSION
-  # ============================================
   ClarityShieldConfiguration:
     type: app-extension
     platform: iOS
@@ -51,12 +45,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldConfiguration
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.clarity-focus
-        com.apple.developer.family-controls: true
     info:
       properties:
         CFBundleDisplayName: ClarityShieldConfiguration
@@ -64,9 +52,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldConfiguration
 
-  # ============================================
-  # SHIELD ACTION EXTENSION
-  # ============================================
   ClarityShieldAction:
     type: app-extension
     platform: iOS
@@ -76,12 +61,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldAction
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.clarity-focus
-        com.apple.developer.family-controls: true
     info:
       properties:
         CFBundleDisplayName: ClarityShieldAction
@@ -89,9 +68,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.ManagedSettings.shield-action
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityShieldAction
 
-  # ============================================
-  # DEVICE ACTIVITY MONITOR EXTENSION
-  # ============================================
   ClarityDeviceActivityMonitor:
     type: app-extension
     platform: iOS
@@ -101,12 +77,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityMonitor
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.clarity-focus
-        com.apple.developer.family-controls: true
     info:
       properties:
         CFBundleDisplayName: ClarityDeviceActivityMonitor
@@ -114,9 +84,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.DeviceActivity.monitor
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityMonitorExtension
 
-  # ============================================
-  # DEVICE ACTIVITY REPORT EXTENSION
-  # ============================================
   ClarityDeviceActivityReport:
     type: app-extension
     platform: iOS
@@ -126,12 +93,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityReport
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.clarity-focus
-        com.apple.developer.family-controls: true
     info:
       properties:
         CFBundleDisplayName: ClarityDeviceActivityReport
@@ -139,9 +100,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.DeviceActivity.report
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ClarityDeviceActivityReport
 
-  # ============================================
-  # WIDGET EXTENSION
-  # ============================================
   ClarityWidget:
     type: app-extension
     platform: iOS
@@ -151,11 +109,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.Widget
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.clarity-focus
     info:
       properties:
         CFBundleDisplayName: ClarityWidget
