@@ -63,7 +63,6 @@ targets:
           - group.com.clarity-focus
         com.apple.developer.family-controls: true
     info:
-      path: Clarity/Extensions/ShieldConfiguration/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldConfiguration
         NSExtension:
@@ -88,7 +87,6 @@ targets:
           - group.com.clarity-focus
         com.apple.developer.family-controls: true
     info:
-      path: Clarity/Extensions/ShieldAction/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldAction
         NSExtension:
@@ -113,7 +111,6 @@ targets:
           - group.com.clarity-focus
         com.apple.developer.family-controls: true
     info:
-      path: Clarity/Extensions/DeviceActivityMonitor/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityMonitor
         NSExtension:
@@ -138,7 +135,6 @@ targets:
           - group.com.clarity-focus
         com.apple.developer.family-controls: true
     info:
-      path: Clarity/Extensions/DeviceActivityReport/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityReport
         NSExtension:
@@ -162,7 +158,6 @@ targets:
         com.apple.security.application-groups:
           - group.com.clarity-focus
     info:
-      path: Clarity/Extensions/ClarityWidget/Info.plist
       properties:
         CFBundleDisplayName: ClarityWidget
         NSExtension:
