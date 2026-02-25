@@ -26,9 +26,6 @@ targets:
         excludes:
           - "Extensions/**"
           - "Fonts/**"
-      - path: Clarity/Fonts
-        optional: true
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus

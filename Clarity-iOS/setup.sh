@@ -36,43 +36,44 @@ echo "[2/4] Checking fonts..."
 FONT_DIR="Clarity/Fonts"
 mkdir -p "$FONT_DIR"
 
-download_font() {
-    local family="$1"
+# Use direct GitHub raw URLs for Google Fonts (reliable in CI)
+download_font_file() {
+    local name="$1"
     local url="$2"
-    local dir="$3"
-    local check_file="$4"
 
-    if [ -f "$FONT_DIR/$check_file" ]; then
-        echo "       $family already present."
+    if [ -f "$FONT_DIR/$name" ]; then
         return 0
     fi
 
-    echo "       Downloading $family..."
-    if curl --max-time 30 -fSL "$url" -o "/tmp/$dir.zip" 2>/dev/null; then
-        if unzip -qo "/tmp/$dir.zip" -d "/tmp/$dir" 2>/dev/null; then
-            local count
-            count=$(find "/tmp/$dir" -name "*.ttf" 2>/dev/null | wc -l)
-            if [ "$count" -gt 0 ]; then
-                find "/tmp/$dir" -name "*.ttf" -exec cp {} "$FONT_DIR/" \;
-                echo "       $family: copied $count font files."
-            else
-                echo "       WARNING: $family zip had no .ttf files"
-            fi
-        else
-            echo "       WARNING: $family zip could not be unzipped"
-        fi
-        rm -rf "/tmp/$dir" "/tmp/$dir.zip"
+    if curl --max-time 15 -fsSL "$url" -o "$FONT_DIR/$name" 2>/dev/null; then
+        echo "       Downloaded $name"
     else
-        echo "       WARNING: Could not download $family (skipping)"
+        echo "       WARNING: Could not download $name"
+        rm -f "$FONT_DIR/$name"
     fi
 }
 
-download_font "Playfair Display" "https://fonts.google.com/download?family=Playfair+Display" "playfair" "PlayfairDisplay-Regular.ttf"
-download_font "Outfit" "https://fonts.google.com/download?family=Outfit" "outfit" "Outfit-Regular.ttf"
-download_font "Space Mono" "https://fonts.google.com/download?family=Space+Mono" "spacemono" "SpaceMono-Regular.ttf"
+# Playfair Display
+echo "       Fetching Playfair Display..."
+download_font_file "PlayfairDisplay-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Regular.ttf"
+download_font_file "PlayfairDisplay-Italic.ttf" "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Italic.ttf"
+download_font_file "PlayfairDisplay-SemiBoldItalic.ttf" "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-SemiBoldItalic.ttf"
 
-FONT_COUNT=$(find "$FONT_DIR" -name "*.ttf" 2>/dev/null | wc -l)
-echo "       Total fonts: $FONT_COUNT files in $FONT_DIR"
+# Outfit
+echo "       Fetching Outfit..."
+download_font_file "Outfit-Thin.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Thin.ttf"
+download_font_file "Outfit-ExtraLight.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-ExtraLight.ttf"
+download_font_file "Outfit-Light.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Light.ttf"
+download_font_file "Outfit-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Regular.ttf"
+download_font_file "Outfit-Medium.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Medium.ttf"
+download_font_file "Outfit-SemiBold.ttf" "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-SemiBold.ttf"
+
+# Space Mono
+echo "       Fetching Space Mono..."
+download_font_file "SpaceMono-Regular.ttf" "https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Regular.ttf"
+
+FONT_COUNT=$(find "$FONT_DIR" -name "*.ttf" 2>/dev/null | wc -l | tr -d ' ')
+echo "       Total: $FONT_COUNT font files"
 
 # Step 4: Generate Xcode project
 echo "[3/4] Generating Xcode project..."
