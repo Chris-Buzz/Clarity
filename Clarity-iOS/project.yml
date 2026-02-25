@@ -3,7 +3,6 @@ options:
   bundleIdPrefix: com.clarity-focus
   deploymentTarget:
     iOS: "17.0"
-  xcodeVersion: "15.2"
   generateEmptyDirectories: false
   groupSortPosition: top
 

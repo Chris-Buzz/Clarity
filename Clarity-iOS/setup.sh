@@ -73,6 +73,10 @@ ls -la Clarity/Extensions/ 2>/dev/null || echo "       No Extensions directory!"
 echo "       Entitlements exists: $(test -f Clarity/Clarity.entitlements && echo 'YES' || echo 'NO')"
 echo "       Info.plist exists: $(test -f Clarity/Info.plist && echo 'YES' || echo 'NO')"
 echo "       Fonts dir: $(ls Clarity/Fonts/ 2>/dev/null | wc -l) files"
+# Strip Windows CRLF line endings (project edited on Windows)
+if command -v sed &> /dev/null; then
+    sed -i '' 's/\r$//' project.yml
+fi
 xcodegen generate
 
 echo "[4/4] Done!"
