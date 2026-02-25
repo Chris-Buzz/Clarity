@@ -25,7 +25,7 @@ targets:
       - path: Clarity
         excludes:
           - "Extensions/**"
-    resources:
+          - "Fonts/**"
       - path: Clarity/Fonts
         optional: true
         buildPhase: resources
@@ -35,8 +35,6 @@ targets:
         INFOPLIST_FILE: Clarity/Info.plist
         CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-    entitlements:
-      path: Clarity/Clarity.entitlements
     dependencies:
       - target: ClarityShieldConfiguration
       - target: ClarityShieldAction
@@ -57,6 +55,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldConfiguration
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     entitlements:
+      path: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.clarity-focus
@@ -81,6 +80,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldAction
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     entitlements:
+      path: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.clarity-focus
@@ -105,6 +105,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityMonitor
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     entitlements:
+      path: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.clarity-focus
@@ -129,6 +130,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityReport
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     entitlements:
+      path: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.clarity-focus
@@ -153,6 +155,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.Widget
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     entitlements:
+      path: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.clarity-focus

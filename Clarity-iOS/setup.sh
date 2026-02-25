@@ -48,13 +48,22 @@ download_font() {
     fi
 
     echo "       Downloading $family..."
-    if curl --max-time 30 -sL "$url" -o "/tmp/$dir.zip" 2>/dev/null; then
-        unzip -qo "/tmp/$dir.zip" -d "/tmp/$dir" 2>/dev/null || true
-        find "/tmp/$dir" -name "*.ttf" -exec cp {} "$FONT_DIR/" \; 2>/dev/null || true
+    if curl --max-time 30 -fSL "$url" -o "/tmp/$dir.zip" 2>/dev/null; then
+        if unzip -qo "/tmp/$dir.zip" -d "/tmp/$dir" 2>/dev/null; then
+            local count
+            count=$(find "/tmp/$dir" -name "*.ttf" 2>/dev/null | wc -l)
+            if [ "$count" -gt 0 ]; then
+                find "/tmp/$dir" -name "*.ttf" -exec cp {} "$FONT_DIR/" \;
+                echo "       $family: copied $count font files."
+            else
+                echo "       WARNING: $family zip had no .ttf files"
+            fi
+        else
+            echo "       WARNING: $family zip could not be unzipped"
+        fi
         rm -rf "/tmp/$dir" "/tmp/$dir.zip"
-        echo "       $family downloaded."
     else
-        echo "       WARNING: Could not download $family (skipping — app will use system fonts)"
+        echo "       WARNING: Could not download $family (skipping)"
     fi
 }
 
@@ -62,17 +71,11 @@ download_font "Playfair Display" "https://fonts.google.com/download?family=Playf
 download_font "Outfit" "https://fonts.google.com/download?family=Outfit" "outfit" "Outfit-Regular.ttf"
 download_font "Space Mono" "https://fonts.google.com/download?family=Space+Mono" "spacemono" "SpaceMono-Regular.ttf"
 
+FONT_COUNT=$(find "$FONT_DIR" -name "*.ttf" 2>/dev/null | wc -l)
+echo "       Total fonts: $FONT_COUNT files in $FONT_DIR"
+
 # Step 4: Generate Xcode project
 echo "[3/4] Generating Xcode project..."
-echo "       Working directory: $(pwd)"
-echo "       XcodeGen version: $(xcodegen --version 2>&1 || echo 'unknown')"
-echo "       Directory structure:"
-ls -la Clarity/ | head -20
-echo "       Extensions:"
-ls -la Clarity/Extensions/ 2>/dev/null || echo "       No Extensions directory!"
-echo "       Entitlements exists: $(test -f Clarity/Clarity.entitlements && echo 'YES' || echo 'NO')"
-echo "       Info.plist exists: $(test -f Clarity/Info.plist && echo 'YES' || echo 'NO')"
-echo "       Fonts dir: $(ls Clarity/Fonts/ 2>/dev/null | wc -l) files"
 # Strip Windows CRLF line endings (project edited on Windows)
 if command -v sed &> /dev/null; then
     sed -i '' 's/\r$//' project.yml
