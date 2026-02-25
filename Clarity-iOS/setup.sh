@@ -64,6 +64,15 @@ download_font "Space Mono" "https://fonts.google.com/download?family=Space+Mono"
 
 # Step 4: Generate Xcode project
 echo "[3/4] Generating Xcode project..."
+echo "       Working directory: $(pwd)"
+echo "       XcodeGen version: $(xcodegen --version 2>&1 || echo 'unknown')"
+echo "       Directory structure:"
+ls -la Clarity/ | head -20
+echo "       Extensions:"
+ls -la Clarity/Extensions/ 2>/dev/null || echo "       No Extensions directory!"
+echo "       Entitlements exists: $(test -f Clarity/Clarity.entitlements && echo 'YES' || echo 'NO')"
+echo "       Info.plist exists: $(test -f Clarity/Info.plist && echo 'YES' || echo 'NO')"
+echo "       Fonts dir: $(ls Clarity/Fonts/ 2>/dev/null | wc -l) files"
 xcodegen generate
 
 echo "[4/4] Done!"
