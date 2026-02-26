@@ -35,7 +35,7 @@ workflows:
           chmod +x setup.sh
           ./setup.sh
 
-      # Step 3: Set up code signing
+      # Step 3: Fetch certificates
       - name: Set up code signing
         script: |
           keychain initialize
@@ -47,36 +47,54 @@ workflows:
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
           keychain add-certificates
 
-          # Debug: verify profiles were downloaded and check their capabilities
-          echo "=== Installed Provisioning Profiles ==="
-          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          if [ -d "$PROFILE_DIR" ]; then
-            for f in "$PROFILE_DIR"/*.mobileprovision; do
-              [ -f "$f" ] || continue
-              echo "--- $(basename "$f") ---"
-              security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw - 2>/dev/null || true
-              echo "  Entitlements:"
-              security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements xml1 -o - - 2>/dev/null | head -30 || true
-              echo ""
-            done
-          else
-            echo "WARNING: No provisioning profiles directory found!"
-          fi
-          echo "======================================="
-
-          cd Clarity-iOS
-          xcode-project use-profiles --project Clarity.xcodeproj
-
-      # Step 4: Build IPA for distribution
+      # Step 4: Build archive + export IPA using automatic signing
+      # Bypasses xcode-project use-profiles/build-ipa which fails with XcodeGen projects.
+      # Instead, -allowProvisioningUpdates lets Xcode manage profiles directly via the
+      # App Store Connect API key (same mechanism as Xcode.app automatic signing).
       - name: Build IPA
         script: |
           cd Clarity-iOS
-          xcode-project build-ipa \
-            --project Clarity.xcodeproj \
-            --scheme "$XCODE_SCHEME"
+
+          # Extract team ID from a downloaded provisioning profile
+          TEAM_ID=""
+          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            [ -f "$f" ] || continue
+            TEAM_ID=$(security cms -D -i "$f" 2>/dev/null | plutil -extract TeamIdentifier.0 raw - 2>/dev/null)
+            [ -n "$TEAM_ID" ] && break
+          done
+
+          if [ -z "$TEAM_ID" ]; then
+            echo "ERROR: Could not extract Team ID from provisioning profiles"
+            ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles directory"
+            exit 1
+          fi
+          echo "Using Team ID: $TEAM_ID"
+
+          # Archive with automatic signing + ASC API key auth
+          xcodebuild archive \
+            -project Clarity.xcodeproj \
+            -scheme "$XCODE_SCHEME" \
+            -archivePath build/Clarity.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+          # Export IPA for App Store distribution
+          xcodebuild -exportArchive \
+            -archivePath build/Clarity.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist exportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
     artifacts:
-      - Clarity-iOS/build/ios/ipa/*.ipa
+      - Clarity-iOS/build/ipa/*.ipa
 
     publishing:
       app_store_connect:
