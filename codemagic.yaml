@@ -49,9 +49,18 @@ workflows:
         script: |
           cd Clarity-iOS
 
-          # Write API key content to a file (xcodebuild needs a file path, not content)
+          # Write API key to file — printf %b interprets \n escape sequences
+          # that Codemagic stores in the env var as actual newlines
           API_KEY_PATH="/tmp/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8"
-          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_KEY_PATH"
+          printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_KEY_PATH"
+
+          # Debug: verify key file looks like valid PEM
+          echo "--- API Key Debug ---"
+          echo "Key file size: $(wc -c < "$API_KEY_PATH") bytes"
+          head -1 "$API_KEY_PATH"
+          tail -1 "$API_KEY_PATH"
+          echo "Line count: $(wc -l < "$API_KEY_PATH")"
+          echo "---"
 
           xcodebuild archive \
             -project Clarity.xcodeproj \
