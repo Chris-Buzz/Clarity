@@ -35,19 +35,16 @@ workflows:
           chmod +x setup.sh
           ./setup.sh
 
-      # Step 3: Create certificate + fetch profiles
+      # Step 3: Fetch profiles + prepare keychain
+      # Certificate installation is intentionally skipped here — the existing
+      # distribution certificate's private key isn't available to Codemagic.
+      # xcodebuild -allowProvisioningUpdates will create its own certificate.
       - name: Set up code signing
         script: |
           keychain initialize
 
-          # Force-create a new distribution certificate that Codemagic controls.
-          # Existing certs on the account lack private keys (created on another machine).
-          # This creates a fresh cert+key pair and saves the .p12 for keychain install.
-          app-store-connect certificates create --type IOS_DISTRIBUTION --save || \
-            app-store-connect certificates create --type DISTRIBUTION --save
-
           # Fetch/create provisioning profiles for all 6 bundle IDs.
-          # "Cannot save" warnings for old certificates are expected and harmless.
+          # "Cannot save Signing Certificates" warnings are expected and harmless.
           app-store-connect fetch-signing-files "com.clarity-focus" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.ShieldConfiguration" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.ShieldAction" --type IOS_APP_STORE --create
@@ -55,12 +52,14 @@ workflows:
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
 
-          keychain add-certificates
+          # Verify profiles were downloaded
+          echo "=== Downloaded profiles ==="
+          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles found"
+          echo "==========================="
 
-      # Step 4: Build archive + export IPA using automatic signing
-      # Bypasses xcode-project use-profiles/build-ipa which fails with XcodeGen projects.
-      # Instead, -allowProvisioningUpdates lets Xcode manage profiles directly via the
-      # App Store Connect API key (same mechanism as Xcode.app automatic signing).
+      # Step 4: Build + sign + export IPA
+      # xcodebuild with -allowProvisioningUpdates + API key auth handles everything:
+      # creates certificates, downloads profiles, and signs — same as Xcode.app automatic signing.
       - name: Build IPA
         script: |
           cd Clarity-iOS
