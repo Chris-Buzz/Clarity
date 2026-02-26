@@ -23,7 +23,7 @@ workflows:
           include: true
 
     scripts:
-      # Step 1: Install XcodeGen (pinned version for reproducible builds)
+      # Step 1: Install XcodeGen
       - name: Install XcodeGen
         script: |
           brew install xcodegen
@@ -46,7 +46,8 @@ workflows:
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
           keychain add-certificates
-          xcode-project use-profiles --project Clarity-iOS/Clarity.xcodeproj
+          cd Clarity-iOS
+          xcode-project use-profiles
 
       # Step 4: Build IPA for distribution
       - name: Build IPA
