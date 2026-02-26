@@ -99,7 +99,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus
         INFOPLIST_FILE: Clarity/Info.plist
         CODE_SIGN_ENTITLEMENTS: Clarity/Clarity.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     dependencies:
       - target: ClarityShieldConfiguration
       - target: ClarityShieldAction
@@ -115,7 +114,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldConfiguration
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
       path: Clarity/Extensions/ShieldConfiguration/Info.plist
       properties:
@@ -132,7 +130,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.ShieldAction
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
       path: Clarity/Extensions/ShieldAction/Info.plist
       properties:
@@ -149,7 +146,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityMonitor
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
       path: Clarity/Extensions/DeviceActivityMonitor/Info.plist
       properties:
@@ -166,7 +162,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.DeviceActivityReport
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
       path: Clarity/Extensions/DeviceActivityReport/Info.plist
       properties:
@@ -183,7 +178,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus.Widget
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
       path: Clarity/Extensions/ClarityWidget/Info.plist
       properties:

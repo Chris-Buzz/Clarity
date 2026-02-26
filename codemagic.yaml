@@ -46,8 +46,26 @@ workflows:
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
           keychain add-certificates
+
+          # Debug: verify profiles were downloaded and check their capabilities
+          echo "=== Installed Provisioning Profiles ==="
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          if [ -d "$PROFILE_DIR" ]; then
+            for f in "$PROFILE_DIR"/*.mobileprovision; do
+              [ -f "$f" ] || continue
+              echo "--- $(basename "$f") ---"
+              security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw - 2>/dev/null || true
+              echo "  Entitlements:"
+              security cms -D -i "$f" 2>/dev/null | plutil -extract Entitlements xml1 -o - - 2>/dev/null | head -30 || true
+              echo ""
+            done
+          else
+            echo "WARNING: No provisioning profiles directory found!"
+          fi
+          echo "======================================="
+
           cd Clarity-iOS
-          xcode-project use-profiles
+          xcode-project use-profiles --project Clarity.xcodeproj
 
       # Step 4: Build IPA for distribution
       - name: Build IPA
