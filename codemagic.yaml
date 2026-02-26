@@ -49,12 +49,16 @@ workflows:
         script: |
           cd Clarity-iOS
 
+          # Write API key content to a file (xcodebuild needs a file path, not content)
+          API_KEY_PATH="/tmp/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8"
+          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_KEY_PATH"
+
           xcodebuild archive \
             -project Clarity.xcodeproj \
             -scheme "$XCODE_SCHEME" \
             -archivePath build/Clarity.xcarchive \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath "$API_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
@@ -66,7 +70,7 @@ workflows:
             -exportPath build/ipa \
             -exportOptionsPlist exportOptions.plist \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            -authenticationKeyPath "$API_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
