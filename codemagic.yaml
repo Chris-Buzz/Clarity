@@ -35,16 +35,26 @@ workflows:
           chmod +x setup.sh
           ./setup.sh
 
-      # Step 3: Fetch certificates
+      # Step 3: Create certificate + fetch profiles
       - name: Set up code signing
         script: |
           keychain initialize
+
+          # Force-create a new distribution certificate that Codemagic controls.
+          # Existing certs on the account lack private keys (created on another machine).
+          # This creates a fresh cert+key pair and saves the .p12 for keychain install.
+          app-store-connect certificates create --type IOS_DISTRIBUTION --save || \
+            app-store-connect certificates create --type DISTRIBUTION --save
+
+          # Fetch/create provisioning profiles for all 6 bundle IDs.
+          # "Cannot save" warnings for old certificates are expected and harmless.
           app-store-connect fetch-signing-files "com.clarity-focus" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.ShieldConfiguration" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.ShieldAction" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityMonitor" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
+
           keychain add-certificates
 
       # Step 4: Build archive + export IPA using automatic signing
