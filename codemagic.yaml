@@ -11,9 +11,6 @@ workflows:
       app_store_connect: Clarity App Store Connect
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.clarity-focus
       vars:
         XCODE_SCHEME: "Clarity"
       xcode: latest
