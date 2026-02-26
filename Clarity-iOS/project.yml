@@ -20,6 +20,9 @@ targets:
       - Clarity/ViewModels
       - Clarity/Services
       - Clarity/Utilities
+      - path: Clarity/Fonts
+        buildPhase: resources
+        optional: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus
@@ -44,6 +47,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ShieldConfiguration/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldConfiguration
         NSExtension:
@@ -61,6 +65,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ShieldAction/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldAction
         NSExtension:
@@ -78,6 +83,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/DeviceActivityMonitor/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityMonitor
         NSExtension:
@@ -95,6 +101,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/DeviceActivityReport/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityReport
         NSExtension:
@@ -112,6 +119,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ClarityWidget/Info.plist
       properties:
         CFBundleDisplayName: ClarityWidget
         NSExtension:

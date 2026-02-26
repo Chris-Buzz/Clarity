@@ -23,13 +23,15 @@ else
 fi
 
 # Step 2: Download fonts (non-fatal — app has system font fallbacks)
+# Note: Outfit and PlayfairDisplay are now variable fonts on Google Fonts.
+# Variable fonts work with iOS UIAppFonts and provide all weight variants.
 echo "[2/5] Downloading fonts..."
 FONT_DIR="Clarity/Fonts"
 mkdir -p "$FONT_DIR"
 curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/spacemono/SpaceMono-Regular.ttf" -o "$FONT_DIR/SpaceMono-Regular.ttf" 2>/dev/null || true
-curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-Regular.ttf" -o "$FONT_DIR/Outfit-Regular.ttf" 2>/dev/null || true
-curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/outfit/static/Outfit-SemiBold.ttf" -o "$FONT_DIR/Outfit-SemiBold.ttf" 2>/dev/null || true
-curl --max-time 15 -fsSL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/static/PlayfairDisplay-Regular.ttf" -o "$FONT_DIR/PlayfairDisplay-Regular.ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL -L "https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf" -o "$FONT_DIR/Outfit[wght].ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL -L "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf" -o "$FONT_DIR/PlayfairDisplay[wght].ttf" 2>/dev/null || true
+curl --max-time 15 -fsSL -L "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf" -o "$FONT_DIR/PlayfairDisplay-Italic[wght].ttf" 2>/dev/null || true
 FONT_COUNT=$(find "$FONT_DIR" -name "*.ttf" -size +0c 2>/dev/null | wc -l | tr -d ' ')
 echo "       Downloaded $FONT_COUNT fonts"
 
@@ -66,8 +68,7 @@ ENTEOF
 echo "       Done"
 
 # Step 4: Generate project.yml via heredoc (guarantees LF line endings on macOS)
-# IMPORTANT: Sources list individual subdirectories to avoid the 'path:' object
-# syntax that causes "Decoding failed at 'path'" in some XcodeGen versions.
+# Extension targets require info.path for XcodeGen to know where to write Info.plist.
 echo "[4/5] Generating Xcode project..."
 
 cat > project.yml << 'YMLEOF'
@@ -90,6 +91,9 @@ targets:
       - Clarity/ViewModels
       - Clarity/Services
       - Clarity/Utilities
+      - path: Clarity/Fonts
+        buildPhase: resources
+        optional: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.clarity-focus
@@ -113,6 +117,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldConfiguration/ShieldConfiguration.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ShieldConfiguration/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldConfiguration
         NSExtension:
@@ -129,6 +134,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ShieldAction/ShieldAction.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ShieldAction/Info.plist
       properties:
         CFBundleDisplayName: ClarityShieldAction
         NSExtension:
@@ -145,6 +151,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityMonitor/DeviceActivityMonitor.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/DeviceActivityMonitor/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityMonitor
         NSExtension:
@@ -161,6 +168,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/DeviceActivityReport/DeviceActivityReport.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/DeviceActivityReport/Info.plist
       properties:
         CFBundleDisplayName: ClarityDeviceActivityReport
         NSExtension:
@@ -177,6 +185,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Clarity/Extensions/ClarityWidget/ClarityWidget.entitlements
         DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
     info:
+      path: Clarity/Extensions/ClarityWidget/Info.plist
       properties:
         CFBundleDisplayName: ClarityWidget
         NSExtension:

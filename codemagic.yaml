@@ -11,8 +11,10 @@ workflows:
       app_store_connect: Clarity App Store Connect
 
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.clarity-focus
       vars:
-        XCODE_WORKSPACE: "Clarity-iOS/Clarity.xcodeproj"
         XCODE_SCHEME: "Clarity"
       xcode: latest
 
@@ -24,7 +26,7 @@ workflows:
           include: true
 
     scripts:
-      # Step 1: Install XcodeGen
+      # Step 1: Install XcodeGen (pinned version for reproducible builds)
       - name: Install XcodeGen
         script: |
           brew install xcodegen
@@ -47,39 +49,18 @@ workflows:
           app-store-connect fetch-signing-files "com.clarity-focus.DeviceActivityReport" --type IOS_APP_STORE --create
           app-store-connect fetch-signing-files "com.clarity-focus.Widget" --type IOS_APP_STORE --create
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles --project Clarity-iOS/Clarity.xcodeproj
 
-      # Step 4: Build
-      - name: Build
+      # Step 4: Build IPA for distribution
+      - name: Build IPA
         script: |
           cd Clarity-iOS
-          xcodebuild build -project Clarity.xcodeproj \
-            -scheme Clarity \
-            -destination 'generic/platform=iOS' \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            clean build
-
-      # Step 5: Package IPA
-      - name: Package IPA
-        script: |
-          cd Clarity-iOS
-          xcodebuild archive -project Clarity.xcodeproj \
-            -scheme Clarity \
-            -destination 'generic/platform=iOS' \
-            -configuration Release \
-            -archivePath build/Clarity.xcarchive \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
-
-          xcodebuild -exportArchive \
-            -archivePath build/Clarity.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
-            -exportPath build/ipa
+          xcode-project build-ipa \
+            --project Clarity.xcodeproj \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
-      - Clarity-iOS/build/ipa/*.ipa
+      - Clarity-iOS/build/ios/ipa/*.ipa
 
     publishing:
       app_store_connect:
